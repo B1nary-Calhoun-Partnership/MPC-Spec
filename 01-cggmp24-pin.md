@@ -30,14 +30,14 @@ CGGMP'24 upstream exposes `set_derivation_path(path)` for SLIP-10/BIP-32-style H
 
 A 4-line public method `set_additive_shift(scalar)` is required to expose the existing internal `additive_shift` field directly. Until upstream merges:
 
-- The fork at `Calgooon/cggmp21-fork` is currently private. Before Phase 0 ships, Calhoun MUST either (a) make the fork public (recommended location: `Calhooon/cggmp21-fork` under the public org) or (b) grant Binary read access to the private Calgooon repo. The upstream PR opened week 1 is the path to retiring this fork entirely.
+- The fork lives at [`B1nary-Calhoun-Partnership/cggmp21-fork`](https://github.com/B1nary-Calhoun-Partnership/cggmp21-fork) on the partnership org. The default branch is `brc42-additive-shift`, rebased on upstream `cggmp24/m` at version `cggmp24-v0.7.0-alpha.4` — the latest CVE-patched release at time of writing. **The repo is currently private; an org admin needs to flip visibility to public** (Settings → Danger Zone → Change visibility) so Binary can clone without authentication. The upstream PR opened week 1 is the path to retiring this fork entirely.
 - Both implementations MUST point at Calhoun's fork via Cargo `[patch."https://github.com/LFDT-Lockness/cggmp21"]` directive:
   ```toml
   [patch."https://github.com/LFDT-Lockness/cggmp21"]
-  cggmp24        = { git = "https://github.com/Calgooon/cggmp21-fork", branch = "brc42-additive-shift" }
-  cggmp24-keygen = { git = "https://github.com/Calgooon/cggmp21-fork", branch = "brc42-additive-shift" }
-  key-share      = { git = "https://github.com/Calgooon/cggmp21-fork", branch = "brc42-additive-shift" }
-  paillier-zk    = { git = "https://github.com/Calgooon/cggmp21-fork", branch = "brc42-additive-shift" }
+  cggmp24        = { git = "https://github.com/B1nary-Calhoun-Partnership/cggmp21-fork", branch = "brc42-additive-shift" }
+  cggmp24-keygen = { git = "https://github.com/B1nary-Calhoun-Partnership/cggmp21-fork", branch = "brc42-additive-shift" }
+  key-share      = { git = "https://github.com/B1nary-Calhoun-Partnership/cggmp21-fork", branch = "brc42-additive-shift" }
+  paillier-zk    = { git = "https://github.com/B1nary-Calhoun-Partnership/cggmp21-fork", branch = "brc42-additive-shift" }
   ```
 - The fork MUST be rebased on top of the CVE-patched commit (§01.2.1).
 - Calhoun opens an upstream PR to LFDT-Lockness/cggmp21 in Phase 0. Once merged and released, both implementations MAY drop the `[patch]` and pin upstream directly. ADR-0001 supersession will record the transition.
@@ -84,7 +84,7 @@ A scheme migration MUST be invoked by an ADR superseding ADR-0001 with explicit 
 
 ## 01.7 Implementation notes
 
-- bsv-mpc currently depends on the fork via submodule at `./cggmp21-fork`. Spec compliance requires the submodule track the brc42-additive-shift branch rebased on ≥ 0.7.0-alpha.2.
+- bsv-mpc currently depends on the fork via submodule at `./cggmp21-fork`. Spec compliance requires the submodule URL be updated from `Calgooon/cggmp21-fork` to `B1nary-Calhoun-Partnership/cggmp21-fork` and the pointer bumped to the rebased commit (the rebase produced a new SHA on `brc42-additive-shift`).
 - rust-mpc currently pins commit `117cab37f0c54e96ff3e1c2048c82d5864e90e74` on `cggmp24/m` (pre-CVE-patch). MUST update.
 - bsv-mpc currently does NOT enable `insecure-assume-preimage-known` (per `bsv-mpc/crates/bsv-mpc-core/src/signing.rs:18`). MUST enable.
 - rust-mpc currently DOES enable `insecure-assume-preimage-known`. No change required.
@@ -94,7 +94,7 @@ A scheme migration MUST be invoked by an ADR superseding ADR-0001 with explicit 
 A verifier checking implementation conformance to this section SHOULD:
 
 1. Inspect `Cargo.toml` and `Cargo.lock` for the cggmp24 git revision; confirm ≥ 0.7.0-alpha.2.
-2. Confirm `[patch]` (if present) points to `Calgooon/cggmp21-fork#brc42-additive-shift`.
+2. Confirm `[patch]` (if present) points to `B1nary-Calhoun-Partnership/cggmp21-fork#brc42-additive-shift`.
 3. Confirm enabled cargo features match §01.3.
 4. Run conformance test vector `01.cggmp24.set_additive_shift_round_trip` (see §14).
 

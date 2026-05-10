@@ -33,7 +33,7 @@ Mandatory comparators per the brief:
 
 ## §B — Option 1: "CGGMP'24 + BRC-42 done right" (RECOMMENDED for v1)
 
-Pin the LFDT-Lockness `cggmp21` repo's `cggmp24/m` branch at a commit **on or after the patches for CVE-2025-66016 and CVE-2025-66017** (≥ v0.7.0-alpha.2 of the cggmp24 line). Calhoun's fork (`Calgooon/cggmp21-fork#brc42-additive-shift`) is rebased on top of that commit. The fork adds exactly one public method behind the existing `hd-wallet` cfg — `set_additive_shift(scalar)`. Open the upstream PR week 1.
+Pin the LFDT-Lockness `cggmp21` repo's `cggmp24/m` branch at a commit **on or after the patches for CVE-2025-66016 and CVE-2025-66017** (≥ v0.7.0-alpha.2 of the cggmp24 line). Calhoun's fork (`B1nary-Calhoun-Partnership/cggmp21-fork#brc42-additive-shift`) is rebased on top of that commit. The fork adds exactly one public method behind the existing `hd-wallet` cfg — `set_additive_shift(scalar)`. Open the upstream PR week 1.
 
 **Derivation:** keep BRC-42, fix it. The current divergence (bsv-mpc skips `.to_lowercase().trim()`, rust-mpc applies it — convergence §1.4) is a P0 wire break. The canonical invoice is the one that matches the BSV TS SDK contract, which both `bsv-worm` and the existing wallet ecosystem are bound to. So bsv-mpc's `hd.rs::compute_invoice` adopts rust-mpc's normalization, full stop.
 

@@ -43,7 +43,7 @@ This repo has two stewards: one from each implementation team.
 
 | Repo | Owner | Language | Status |
 |---|---|---|---|
-| `bsv-mpc` | Calhoun | Rust | 5 crates, ~21.7K LOC, 15/15 mainnet POCs |
+| [`bsv-mpc`](https://github.com/B1nary-Calhoun-Partnership/bsv-mpc) | Calhoun | Rust | 5 crates, ~21.7K LOC, 15/15 mainnet POCs |
 | Binary's MPC implementation (URL TBD by Binary) | Binary | Rust | 8 lib crates + 3 binaries, ~24K LOC, full CI |
 | [`bsv-messagebox-cloudflare`](https://github.com/Calhooon/bsv-messagebox-cloudflare) | Calhoun | Rust → WASM | Deployed CF Worker, BRC-31 + D1 + FCM |
 

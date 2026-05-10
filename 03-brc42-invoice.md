@@ -39,6 +39,16 @@ where:
 
 The string is encoded as **UTF-8** for HMAC input.
 
+## 03.2.1 Input validation
+
+Implementations MUST reject inputs that violate the following constraints, matching the BSV TS SDK `KeyDeriver.computeInvoiceNumber` contract (`bsv-blockchain/ts-sdk/src/wallet/KeyDeriver.ts`):
+
+- **Security level** MUST be one of `{0, 1, 2}`. Any other value MUST be rejected before HMAC computation.
+- **Key ID** length MUST satisfy `1 ≤ len ≤ 800` (byte length of the UTF-8 encoding).
+- **Protocol name** (after `.to_lowercase().trim()`) length MUST satisfy `len ≤ 400`, with one carve-out: if `normalized_protocol_id.starts_with("specific linkage revelation ")` (note trailing space), then `len ≤ 430` is permitted. The carve-out exists because the "specific linkage revelation" protocol can encapsulate another protocol ID inside its name.
+
+Rejection MUST occur before any HMAC computation. Implementations SHOULD return a structured error identifying which constraint failed so callers can debug. Test vectors covering each rejection path are included in `conformance/test-vectors/03-brc42-invoice.json` (§14).
+
 ## 03.3 HMAC computation
 
 ```

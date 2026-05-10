@@ -86,4 +86,4 @@ Internal references:
 - `/Users/johncalhoun/bsv/mpc/bsv-mpc/crates/bsv-mpc-worker/src/auth.rs`
 - `/Users/johncalhoun/bsv/mpc/bsv-mpc/crates/bsv-mpc-overlay/src/chip.rs`
 - `/Users/johncalhoun/bsv/mpc/bsv-mpc/docs/THREAT-MODEL.md` (lines 120-162, stale)
-- `/Users/johncalhoun/bsv/rust-middleware/bsv-auth-cloudflare/src/middleware/auth.rs`
+- `/Users/johncalhoun/bsv/Calhooon/bsv-middleware-cloudflare/src/middleware/auth.rs`

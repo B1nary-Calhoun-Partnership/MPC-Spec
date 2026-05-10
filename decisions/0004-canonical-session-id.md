@@ -42,7 +42,7 @@ Three properties drive the choice:
 
 - **`bsv-mpc`:** Implement deterministic SessionId per §04. Replace ad-hoc string production with the canonical SHA-256. ~4 hours of work.
 - **`rust-mpc`:** Replace `new_session_id("sign")` with the deterministic formula. Same on the keygen path. ~4 hours of work.
-- **`rust-message-box`:** No change.
+- **`bsv-messagebox-cloudflare`:** No change.
 - **Spec:** [`§04-session-id.md`](../04-session-id.md) codifies the formula and per-kind `payload_digest_32B`.
 - **Test vectors:** Vectors A (routine 2-of-3 sign), B (DKG with on-chain anchor) land in `conformance/test-vectors/04-session-id.json`.
 

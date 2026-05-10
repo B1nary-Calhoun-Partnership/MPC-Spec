@@ -39,7 +39,7 @@ There is no alternate canonicalization that wins on technical merit — the SDK 
 
 - **`bsv-mpc`:** Apply `.to_lowercase().trim()` in `crates/bsv-mpc-core/src/hd.rs::compute_invoice`. Add SDK-parity test vectors (the 5 public + 5 private vectors from `~/bsv/BRCs/key-derivation/0042.md`). ~1 hour of work.
 - **`rust-mpc`:** No change required.
-- **`rust-message-box`:** No change.
+- **`bsv-messagebox-cloudflare`:** No change.
 - **Spec:** §03-brc42-invoice codifies the canonicalization with stress-test vectors (mixed case, Unicode, empty key_id).
 - **Test vectors:** SDK round-trip + stress vectors land in `conformance/test-vectors/03-brc42-invoice.json`.
 

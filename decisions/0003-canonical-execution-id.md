@@ -49,7 +49,7 @@ The all-zero carve-out for keygen is the unique exception — keygen produces th
 
 - **`bsv-mpc`:** Replace `signing.rs:175-183` and equivalent `dkg.rs` lines with the §02 formula. Generate test vectors. ~3 hours of work.
 - **`rust-mpc`:** Replace `coordinator/src/dkg.rs:154` and equivalent files with the §02 formula. Generate test vectors. ~3 hours of work.
-- **`rust-message-box`:** No change.
+- **`bsv-messagebox-cloudflare`:** No change.
 - **Spec:** [`§02-execution-id.md`](../02-execution-id.md) codifies the formula.
 - **Test vectors:** Vector A (sign), Vector B (keygen carve-out), Vector C (refresh) land in `conformance/test-vectors/02-execution-id.json`. Both implementations MUST produce byte-identical results.
 

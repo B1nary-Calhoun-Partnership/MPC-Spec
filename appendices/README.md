@@ -8,7 +8,7 @@ Six agents, each covering one architectural layer. Every agent graded designs ag
 
 | Appendix | Topic | Spec sections informed |
 |---|---|---|
-| [A — Transport](swarm-reports/A-transport.md) | rust-message-box vs rust-mpc transport gap; Iroh, libp2p, Matrix, Lit Protocol comparisons | §05, §06 |
+| [A — Transport](swarm-reports/A-transport.md) | bsv-messagebox-cloudflare vs rust-mpc transport gap; Iroh, libp2p, Matrix, Lit Protocol comparisons | §05, §06 |
 | [B — Identity & certs](swarm-reports/B-identity.md) | BRC-52⊕ profile, Fulcio comparison, federation mechanism | §07, §08, §13 |
 | [C — Policy & audit](swarm-reports/C-policy-audit.md) | Canonical-CBOR PolicyManifest, Cedar comparison, Rekor audit substrate, witness cosigning | §09, §10 |
 | [D — Protocol/crypto](swarm-reports/D-protocol-crypto.md) | CGGMP'24 + CVE patches, DKLs23/FROST forward-prep, BRC-42 canonicalization, ExecutionId, SessionId | §01, §02, §03, §04 |

@@ -64,8 +64,8 @@ Both implementations should enable. BSV sighashes are pre-hashed (SHA-256d) befo
 
 | File | Direction |
 |---|---|
-| §06 Transport | Federated MessageBox + per-cosigner-pinned relays. **WebSocket (Socket.IO/EngineIO compatible) is the canonical receive transport — both relays support it.** HTTP poll + FCM are MUST-support fallbacks for constrained edges (browser-without-WS, mobile background). Iroh QUIC reserved as post-DKG accelerator. Tor v3 as max-privacy profile. **Calhoun extends `rust-message-box` to add Socket.IO over CF Worker Durable Objects** — restores parity with `message.b1nary.cloud`'s WS surface. |
-| §07 BRC-31 auth | Unchanged from the canonical `bsv-auth-cloudflare` reference. |
+| §06 Transport | Federated MessageBox + per-cosigner-pinned relays. **WebSocket (Socket.IO/EngineIO compatible) is the canonical receive transport — both relays support it.** HTTP poll + FCM are MUST-support fallbacks for constrained edges (browser-without-WS, mobile background). Iroh QUIC reserved as post-DKG accelerator. Tor v3 as max-privacy profile. **Calhoun extends `bsv-messagebox-cloudflare` to add Socket.IO over CF Worker Durable Objects** — restores parity with `<binary-messagebox-host-tbd>`'s WS surface. |
+| §07 BRC-31 auth | Unchanged from the canonical `bsv-middleware-cloudflare` reference. |
 | §08 Identity | "BRC-52⊕": short-lived (24h cosigner / 1h human / 7d root) + transparency-log anchor + threshold-subject capable. **Deprecate rust-mpc's `core::identity::Certificate` custom struct.** |
 | §09 Policy | Canonical-CBOR PolicyManifest in cert. Engine fires on 3 hooks (derivation/presigning/signing). Presigs bound to `policy_id`. |
 | §10 Audit | Embedded Sigstore Rekor + 60s STH publishing to BSV (`tm_mpc_audit`) + witness co-signing. BRC-18 proof = audit-log projection. |
@@ -73,7 +73,7 @@ Both implementations should enable. BSV sighashes are pre-hashed (SHA-256d) befo
 | §12 Discovery | CHIP token capabilities incl. `policy_hash`, `transport` block. |
 | §13 Federation | Cross-signed BRC-52 roots. Operator replacement via resharing. |
 | §15 Notary product | Three tiers preserved: Default 2-of-3 / Express x402 / Pro 2-of-5 marketplace. |
-| §16 Operations | Hybrid hot-TEE + cold-HSM. OTel `traceparent` with strict whitelist + CI redaction linter. |
+| §16 Operations | **v1: standard cloud cosigners, no TEE, no HSM cold tier.** Runtime integrity from share refresh + audit + witness cosigning. OTel `traceparent` with strict whitelist + CI redaction linter. TEE / HSM cold tier reserved for v2 institutional. |
 | §17 Supply chain | Reproducible Cargo + cosign + Rekor + SLSA L3 + optional TEE attestation. |
 | §18 Recovery | Threshold resharing + encrypted backup + nested-MPC social recovery. |
 
@@ -128,7 +128,7 @@ Per-zone analysis is preserved in [`appendices/swarm-reports/`](appendices/swarm
 
 ## Stewards
 
-- **Calhoun side:** John Calhoun ([@Calgooon](https://github.com/Calgooon))
-- **Binary side:** TBD ([@b1narydt](https://github.com/b1narydt))
+- **Calhoun side:** John Calhoun ([@Calgooon](https://github.com/Calgooon)) — public org [@Calhooon](https://github.com/Calhooon).
+- **Binary side:** TBD — Binary to assign on first review.
 
 Targeted Phase 0 sign-off: 14 days from first review.

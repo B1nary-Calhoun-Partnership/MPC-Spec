@@ -44,8 +44,8 @@ Canonical JSON (sorted keys). Schema:
   "policy_hash": "0x...",
   "policy_manifest_url": "https://notary.example.com/policy.cbor",
   "transport": {
-    "inbox_url": "https://message.b1nary.cloud",
-    "inbox_url_fallback": ["https://rust-message-box.dev-a3e.workers.dev"],
+    "inbox_url": "https://<binary-messagebox-host-tbd>",
+    "inbox_url_fallback": ["https://<calhoun-messagebox-deploy-tbd>"],
     "iroh_endpoint": "iroh:peer:abc...",
     "tor_onion_url": null,
     "ws_supported": true,

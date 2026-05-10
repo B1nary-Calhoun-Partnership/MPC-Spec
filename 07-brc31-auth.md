@@ -15,7 +15,7 @@ Every interaction between cosigners (over MessageBox, over direct iroh/QUIC, bet
 
 ## 07.2 Reference implementation
 
-The canonical reference is [`bsv-auth-cloudflare`](https://github.com/bitcoin-sv/rust-middleware/tree/main/bsv-auth-cloudflare) (`~/bsv/rust-middleware/bsv-auth-cloudflare/`), an MIT-licensed CF Worker middleware crate. Both implementations SHOULD reuse it (or re-derive it for non-Worker hosts) without modification to the wire-level handshake.
+The canonical reference is [`bsv-middleware-cloudflare`](https://github.com/Calhooon/bsv-middleware-cloudflare) (`~/bsv/Calhooon/bsv-middleware-cloudflare/`), an MIT-licensed CF Worker middleware crate. Both implementations SHOULD reuse it (or re-derive it for non-Worker hosts) without modification to the wire-level handshake.
 
 bsv-mpc's `crates/bsv-mpc-worker/src/auth.rs` is a 963-LOC port of this reference, with full handshake + session storage + response signing + 13 unit tests. Treat this as a high-quality second reference.
 
@@ -103,5 +103,5 @@ In `conformance/test-vectors/07-brc31-auth.json`. Examples:
 - [`05-message-envelope.md`](05-message-envelope.md) — envelope outer-signature is BRC-31.
 - [`08-identity.md`](08-identity.md) — BRC-31 identity keys are bound to BRC-52 certs.
 - BRC-31: `~/bsv/BRCs/peer-to-peer/0031.md`
-- Reference: `~/bsv/rust-middleware/bsv-auth-cloudflare/src/middleware/auth.rs`
+- Reference: `~/bsv/Calhooon/bsv-middleware-cloudflare/src/middleware/auth.rs`
 - bsv-mpc port: `~/bsv/mpc/bsv-mpc/crates/bsv-mpc-worker/src/auth.rs`

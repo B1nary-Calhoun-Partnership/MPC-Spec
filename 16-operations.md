@@ -5,7 +5,30 @@
 **Decided by:** ADR-0016 (proposed)
 **Last updated:** 2026-05-10
 
-## 16.1 Conformance profiles
+## 16.1 v1 deployment posture (the headline)
+
+**v1 ships without TEE and without HSM cold tier.** Cosigners run on standard cloud infrastructure (CF Workers, k8s pods, VMs). Runtime integrity comes from the cryptographic stack already in place:
+
+- Threshold security (CGGMP'24 UC-IA, §01)
+- Share encryption at rest (AES-256-GCM with BRC-42-derived keys)
+- 30-day share refresh cadence (§16.5, POC 13 pattern)
+- Audit log + witness cosigning (§10)
+- Per-cosigner policy enforcement (§09)
+- Build-time supply-chain provenance via cosign + Rekor + SLSA L3 (§17)
+
+TEE attestation and HSM cold tier are reserved for **v2 institutional tier**. Cost analysis driving this decision:
+
+| Component | Cost | v1 verdict |
+|---|---|---|
+| AWS Nitro Enclave | ~$0.40/hr/cosigner ≈ $300/mo | Excessive for v1 cost-benefit |
+| AWS CloudHSM | ~$1.45/hr/cluster ≈ $1K/mo | Excessive for v1 cost-benefit |
+| Multi-region multi-vendor TEE | $1K+/mo | Excessive for v1 cost-benefit |
+
+The cryptographic invariants we have without enclave hardware are sufficient for v1 threat model. TEE adds defense-in-depth against host-OS root compromise; this is bounded by the share refresh window even without TEE. HSM adds regulatory-grade custody assurance; not v1 audience.
+
+**Forward-compat hooks are preserved.** Cert format keeps `attestation` and `binary_hash` fields as OPTIONAL (§08). Policy engine keeps `RuleKind::RequireAttestation` schema. When v2 ships, no wire changes are required.
+
+## 16.2 Conformance profiles
 
 The spec defines four deployment profiles. A cosigner declares its profile in CHIP token capabilities.
 
@@ -18,7 +41,9 @@ The spec defines four deployment profiles. A cosigner declares its profile in CH
 
 A Notary MUST be `profile-edge` or `profile-server` (high-availability requirement). A user-side cosigner MAY be any.
 
-## 16.2 SLI catalog (15 SLIs)
+**Diversification.** A 2-of-3 deployment SHOULD spread cosigners across distinct cloud vendors / accounts / jurisdictions. Cloud-correlation risk (AWS us-east-1 outage, single-account credential compromise) is a meaningful threat in v1's "no TEE" posture. Recommended pattern: cosigner A on Cloudflare, cosigner B on AWS, cosigner C on GCP — or any two-of-three split that doesn't share single-vendor failure modes.
+
+## 16.3 SLI catalog (15 SLIs)
 
 | SLI | Target | Profile applicability |
 |---|---|---|
@@ -29,7 +54,7 @@ A Notary MUST be `profile-edge` or `profile-server` (high-availability requireme
 | `presig.drain_rate` | < replenishment rate | Edge, Server |
 | `refresh.cadence_compliance` | refresh.last_age ≤ 30d | All |
 | `identifiable_abort.rate` | ≤ 0.05% of attempts | All |
-| `attestation.failure_rate` | ≤ 0.01% of attestation checks | (TEE-enabled) |
+| `attestation.failure_rate` | ≤ 0.01% of attestation checks | (v2; TEE-enabled deployments only) |
 | `cert.expiry_runway` | ≥ 6h to notAfter | All |
 | `transport.queue_depth` | < 100 | Edge, Server |
 | `transport.poll_lag` | < 1s | (poll-mode receivers) |
@@ -152,21 +177,21 @@ IR-002 immediately reshares without them. Status page goes amber. Signing contin
 
 ### 16.6.3 Case (c): Two of three fail simultaneously
 
-Quorum loss. No new signatures. Restoration via:
-- User recovery passphrase (BRC-42-derived) if user-side share lost.
-- Jurisdictional escrow backup if operator-side shares lost.
+Quorum loss. No new signatures. v1 has no HSM cold tier, so restoration depends on:
+- User recovery passphrase (BRC-42-derived) if user-side share lost — works in v1.
+- Encrypted backup at user's BRC-100 wallet (§18) — works in v1.
+- ~~Jurisdictional escrow backup~~ — v2 (depends on cold-tier infra).
+- ~~HSM cold-tier party~~ — v2.
 
-Runbook: IR-009. See §18.
+For v1 high-value users who want belt-and-suspenders, the recommendation is to spread cosigners across maximally diverse infrastructure (different cloud vendors, regions, jurisdictions, BRC-31 identity-key custody) to reduce simultaneous-failure probability. Runbook: IR-009. See §18.
 
-## 16.7 TEE attestation (optional)
+## 16.7 TEE attestation — v2 reserved (NOT v1)
 
-Cosigner cert includes `tee_attestation` field (Nitro PCR0/PCR8 / SEV-SNP report / TDX TDREPORT / `none`).
+Cosigner cert reserves `tee_attestation` + `attestation_format` fields (Nitro PCR0/PCR8 / SEV-SNP report / TDX TDREPORT / `none`). Policy engine reserves `RuleKind::RequireAttestation { format }`. **Both are OPTIONAL in v1; default `none`.**
 
-- Counterparty policies MAY require non-empty attestation via `RuleKind::RequireAttestation { format }`.
-- Cost: ~$0.40/hr extra on AWS Nitro; fewer GCP regions; complicates debugging.
-- Benefit: defends host-OS root, container pivots, supply-chain attacks.
+v1 implementations MAY ignore these fields entirely. v2 institutional deployments will activate them when regulatory pressure for hardware-backed key custody appears.
 
-Mandate: NONE. Notaries SHOULD support TEE attestation for institutional users.
+The decision to defer is cost-driven (§16.1). A v2 ADR will supersede this section when the cost-benefit changes (e.g., Nitro Enclave pricing drops, or the partnership signs an institutional customer who requires it).
 
 ## 16.8 Operator credentials rotation
 

@@ -31,7 +31,7 @@ A "god-tier" choice clears all five simultaneously. Single-axis-optimized design
 
 **Why this wins.**
 - Only architecture that runs in CF Workers, browsers, mobile, and servers today (matters for BRC-100 surface).
-- **WebSocket is the canonical receive transport on both relays.** `rust-message-box` (Calhoun) adds Socket.IO/EngineIO compatibility over CF Worker Durable Objects, restoring parity with `message.b1nary.cloud`'s existing WS surface. HTTP poll and FCM remain as MUST-support fallbacks for constrained edges (browser without WS, mobile background, edge runtimes without DOs). The unlimited-resource framing makes this the right call vs my earlier constraint-driven proposal to leave `rust-message-box` HTTP-only.
+- **WebSocket is the canonical receive transport on both relays.** `bsv-messagebox-cloudflare` (Calhoun) adds Socket.IO/EngineIO compatibility over CF Worker Durable Objects, restoring parity with `<binary-messagebox-host-tbd>`'s existing WS surface. HTTP poll and FCM remain as MUST-support fallbacks for constrained edges (browser without WS, mobile background, edge runtimes without DOs). The unlimited-resource framing makes this the right call vs my earlier constraint-driven proposal to leave `bsv-messagebox-cloudflare` HTTP-only.
 - Federation lets each cosigner pick its preferred relay; envelope is identical regardless of which relay carries it.
 - BRC-22 SLAP/CHIP overlay is the directory; no DHT, no bootnodes — the blockchain is the registry.
 - Three-axis metadata privacy: default (relay sees `from→to`), Tor (relay sees `tor→tor`), one-hop mix-via-cosigner (intermediate ring).
@@ -166,18 +166,21 @@ mpc.recover({ passkey, jointPubkey })            → restore from backup
 
 **See appendix:** [`appendices/swarm-reports/E-notary-product.md`](appendices/swarm-reports/E-notary-product.md)
 
-### B.6 Operations & supply chain (§16, §17) — Hybrid hot-TEE + cold-HSM via resharing
+### B.6 Operations & supply chain (§16, §17) — Standard cloud + threshold + refresh + audit (v1)
 
-**Pick.** Three hot cosigners in TEEs (Nitro Enclave / SEV-SNP / TDX) form the **operational quorum**. Plus 1-2 **cold-tier recovery cosigners** in HSMs (CloudHSM / Luna / YubiHSM2) that participate only in resharing/recovery, never routine signing. **Effective threshold:** 2-of-3 hot during operation; 2-of-5 during recovery (any 2 of {3 hot ∪ 2 cold}).
+**Pick for v1.** Three hot cosigners on standard cloud infrastructure (CF Worker / k8s pod / VM), each operator on diverse vendors/regions to reduce cloud-correlation risk. **No TEE, no HSM cold tier.** Runtime integrity from: share encryption at rest (AES-256-GCM with BRC-42-derived keys), 30-day share refresh (POC 13), audit log + witness cosigning (§10), per-cosigner policy enforcement (§09).
 
-**The unique BSV-MPC primitive.** Users move between `quorum_profile`s via resharing — no on-chain move, same joint pubkey:
-- `Hot` (2-of-3, fast)
-- `HotPlusCold` (2-of-5, recovery-capable)
-- `ColdOnly` (2-of-2 HSM, vault tier)
+**Why no TEE in v1.** Cost: ~$0.40/hr extra on AWS Nitro = ~$300/mo per cosigner; multi-region multi-vendor = $1K+/mo just in enclave overhead. The cryptographic invariants we already have (threshold + refresh + audit + witness cosigning + share encryption) give strong properties without enclave hardware. TEE specifically defends host-OS root compromise; this is bounded by the share refresh cadence even without TEE. The cost-benefit argues for v2.
 
-Fireblocks fixes threshold at vault creation. We don't.
+**Why no HSM cold tier in v1.** AWS CloudHSM is ~$1.45/hr/cluster (~$1K/mo) — same calculus. Reserved for v2 institutional tier when regulatory pressure for hardware-backed key custody appears.
 
-**Cross-party tracing.** OTel `traceparent` rides as MessageEnvelope field 10. **Strict attribute whitelist:** `mpc.session_id`, `mpc.execution_id` (32-byte hex), `mpc.phase`, `mpc.round`, `mpc.party_index`, `mpc.threshold`, `mpc.joint_pubkey_fingerprint` (first 8 bytes only — *not* the pubkey, to prevent linking sessions to addresses), `mpc.message_size_bytes`, `mpc.outcome`, `mpc.aborted_party` (only on identifiable abort), `error.type`. **Forbidden:** any scalar, commitment, nonce, partial signature, Paillier ciphertext, joint pubkey itself, sighash, BRC-31 nonces. **Spec ships a redaction linter that fails CI** if a span attribute matches a forbidden regex.
+**Forward-compat hooks preserved.** Cert format keeps `attestation` and `binary_hash` fields as OPTIONAL (§08). Policy engine keeps `RuleKind::RequireAttestation` schema (§09). When v2 adds TEE/HSM, no wire change needed.
+
+**The unique BSV-MPC primitive (still holds).** Users move between `quorum_profile`s via resharing — no on-chain move, same joint pubkey. **v1 ships with one profile (`Hot`); v2 adds `HotPlusCold` (HSM cold tier) and `ColdOnly` (vault).** The mechanism is the same; v1 just doesn't activate cold-tier infrastructure.
+
+Fireblocks fixes threshold at vault creation. We don't, even in v1 (refresh-and-rotate-quorum-shape works on hot-only too).
+
+**Cross-party tracing.** OTel `traceparent` rides as MessageEnvelope field 12. **Strict attribute whitelist:** `mpc.session_id`, `mpc.execution_id` (32-byte hex), `mpc.phase`, `mpc.round`, `mpc.party_index`, `mpc.threshold`, `mpc.joint_pubkey_fingerprint` (first 8 bytes only — *not* the pubkey, to prevent linking sessions to addresses), `mpc.message_size_bytes`, `mpc.outcome`, `mpc.aborted_party` (only on identifiable abort), `error.type`. **Forbidden:** any scalar, commitment, nonce, partial signature, Paillier ciphertext, joint pubkey itself, sighash, BRC-31 nonces. **Spec ships a redaction linter that fails CI** if a span attribute matches a forbidden regex.
 
 **Refresh choreography.**
 - **RR-001 (Routine 30-day):** `RefreshOrchestrator` on lowest-online-party-index publishes `refresh.proposed` to MessageBox + BRC-22 with 24h ack SLA → `t` parties ack → resharing fires at T-0 → `refresh.completed` event.
@@ -190,9 +193,9 @@ Fireblocks fixes threshold at vault creation. We don't.
 - **(b) one compromised online:** IR-002 immediately reshares without them; status amber; signing continues with `t-1` fault tolerance.
 - **(c) two of three fail simultaneously:** quorum loss. Restoration via user recovery passphrase + jurisdictional escrow backup (runbook IR-009).
 
-**TEE attestation, optional.** Cosigner cert includes `tee_attestation` field (Nitro PCR0/PCR8 / SEV-SNP report / TDX TDREPORT / `none`). Counterparty policies MAY require non-empty attestation via `RuleKind::RequireAttestation`. Cost: +$0.40/hr on AWS, fewer GCP regions, complicates debugging. Benefit: defends host-OS root, container pivots, supply-chain attacks.
+**TEE attestation — v2 reserved.** Cert format includes `tee_attestation` field (Nitro PCR0/PCR8 / SEV-SNP report / TDX TDREPORT) but is OPTIONAL in v1 and typically `none`. Counterparty policies MAY require non-empty attestation via `RuleKind::RequireAttestation` (also reserved). v2 institutional tier activates these.
 
-**Supply chain — reproducible Cargo + Sigstore + SLSA L3.** `cargo --locked` with `SOURCE_DATE_EPOCH`, vendored deps, pinned `rust-toolchain.toml`, CI verifies bit-for-bit reproducibility on a second runner. `cosign sign-blob` per release; OIDC-keyless via Fulcio; entry to Rekor. **Cosigner refuses to start unless its own Rekor entry verifies.** TEE attestation includes binary SHA-256; counterparties cross-check vs Rekor.
+**Supply chain — reproducible Cargo + Sigstore + SLSA L3.** `cargo --locked` with `SOURCE_DATE_EPOCH`, vendored deps, pinned `rust-toolchain.toml`, CI verifies bit-for-bit reproducibility on a second runner. `cosign sign-blob` per release; OIDC-keyless via Fulcio; entry to Rekor. **Cosigner refuses to start unless its own Rekor entry verifies.** Build-time provenance only (no TEE runtime cross-check in v1).
 
 **See appendix:** [`appendices/swarm-reports/F-operations.md`](appendices/swarm-reports/F-operations.md)
 
@@ -229,7 +232,7 @@ What each layer's choice constrains in others. Reading order matters: ExecutionI
 
 | Rejected | Why |
 |---|---|
-| ~~WebSocket-on-DO retrofit to `rust-message-box`~~ | ~~Reverses v2 scope decision; federate instead.~~ **Reversed 2026-05-10:** with unlimited-resource framing, Calhoun adds Socket.IO over CF Worker DOs (~1500 LOC). WebSocket becomes the canonical receive transport; HTTP poll + FCM stay as fallbacks. Federation is unaffected. |
+| ~~WebSocket-on-DO retrofit to `bsv-messagebox-cloudflare`~~ | ~~Reverses v2 scope decision; federate instead.~~ **Reversed 2026-05-10:** with unlimited-resource framing, Calhoun adds Socket.IO over CF Worker DOs (~1500 LOC). WebSocket becomes the canonical receive transport; HTTP poll + FCM stay as fallbacks. Federation is unaffected. |
 | libp2p gossipsub primary transport | Heavyweight (~MB), no clean WASM/CF Worker story, no clean browser story. Park as v3. |
 | W3C VC / DID as primary identity | Marginal vendor-neutrality gain over BRC-52⊕; large implementation cost. Use as export adapter only. |
 | OPA/Rego as policy DSL | ~30MB; doesn't run in CF Workers. Park as v2 if WASM-OPA matures. |

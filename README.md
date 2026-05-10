@@ -43,11 +43,13 @@ This repo has two stewards: one from each implementation team.
 
 | Repo | Owner | Language | Status |
 |---|---|---|---|
-| [`bsv-mpc`](https://github.com/Calgooon/bsv-mpc) | Calhoun | Rust | 5 crates, ~21.7K LOC, 15/15 mainnet POCs |
-| [`rust-mpc`](https://github.com/b1narydt/rust-mpc) | Binary | Rust | 8 lib crates + 3 binaries, ~24K LOC, full CI |
-| [`rust-message-box`](https://github.com/Calgooon/rust-message-box) | Calhoun | Rust → WASM | Deployed CF Worker, BRC-31 + D1 + FCM |
+| `bsv-mpc` | Calhoun | Rust | 5 crates, ~21.7K LOC, 15/15 mainnet POCs |
+| Binary's MPC implementation (URL TBD by Binary) | Binary | Rust | 8 lib crates + 3 binaries, ~24K LOC, full CI |
+| [`bsv-messagebox-cloudflare`](https://github.com/Calhooon/bsv-messagebox-cloudflare) | Calhoun | Rust → WASM | Deployed CF Worker, BRC-31 + D1 + FCM |
 
 Both MPC repos will conform to this spec. Federation between them is the v1 deliverable.
+
+Calhoun's open-source reference repos live at [github.com/Calhooon](https://github.com/Calhooon) — including [`bsv-rs`](https://github.com/Calhooon/bsv-rs) (BSV SDK), [`bsv-wallet-toolbox-rs`](https://github.com/Calhooon/bsv-wallet-toolbox-rs), [`bsv-middleware-cloudflare`](https://github.com/Calhooon/bsv-middleware-cloudflare) (BRC-31 + BRC-29 middleware), [`bsv-messagebox-cloudflare`](https://github.com/Calhooon/bsv-messagebox-cloudflare) (the Calhoun-operated MessageBox), [`bsv-wallet-cli`](https://github.com/Calhooon/bsv-wallet-cli), [`bsv-overlay-cloudflare`](https://github.com/Calhooon/bsv-overlay-cloudflare), and others. Binary is welcome to swap any references in this spec to their own canonical URLs.
 
 ## Phases
 
@@ -65,5 +67,5 @@ MIT OR Apache-2.0. Consistent with both implementation repos.
 
 ## Stewards
 
-- **Calhoun side:** John Calhoun ([@Calgooon](https://github.com/Calgooon))
-- **Binary side:** TBD ([@b1narydt](https://github.com/b1narydt) — to be assigned by Binary)
+- **Calhoun side:** John Calhoun ([@Calgooon](https://github.com/Calgooon)) — public org [@Calhooon](https://github.com/Calhooon).
+- **Binary side:** TBD — to be assigned by Binary on first review of this repo.

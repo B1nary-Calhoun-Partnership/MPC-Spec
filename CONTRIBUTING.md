@@ -6,8 +6,8 @@ This is a two-party specification, not a typical OSS repo. Two implementation te
 
 Anyone can open issues, raise questions, or propose changes via PR. Acceptance requires steward review.
 
-- **Calhoun-side steward:** [@Calgooon](https://github.com/Calgooon)
-- **Binary-side steward:** TBD
+- **Calhoun-side steward:** [@Calgooon](https://github.com/Calgooon) — Calhoun's public org is [@Calhooon](https://github.com/Calhooon).
+- **Binary-side steward:** TBD — Binary fills in. Binary is also welcome to add their own canonical reference-repo URLs (e.g., for their MPC implementation, MessageBox deployment, certifier) to [`PROPOSAL.md`](PROPOSAL.md) and the implementation table in [`README.md`](README.md).
 
 ## Spec sections — three statuses
 

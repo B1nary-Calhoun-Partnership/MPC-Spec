@@ -21,7 +21,7 @@ A god-tier MPC transport for a vendor-neutral threshold-signing network must sat
 
 **One-line summary.** Every cosigner publishes one canonical *MessageBox URL* on its CHIP token. The transport is asynchronous, end-to-end encrypted, sender-signed message envelopes routed via whichever MessageBox the recipient pinned. The wire format is the same on the relay regardless of how the *receiver* listens (WS, FCM, poll). Direct-P2P (QUIC/WebTransport) is an opportunistic accelerator after first contact, never a precondition.
 
-This is essentially "Matrix-style federation, but for MPC ceremony messages, with rust-message-box and `message.b1nary.cloud` as the first two homeservers."
+This is essentially "Matrix-style federation, but for MPC ceremony messages, with bsv-messagebox-cloudflare and `<binary-messagebox-host-tbd>` as the first two homeservers."
 
 **Wire shape:** the canonical CBOR `MessageEnvelope` per spec §05 — BRC-78 inner encryption + BRC-31 outer signature + ExecutionId binding + correlation_id + traceparent.
 
@@ -30,11 +30,11 @@ This is essentially "Matrix-style federation, but for MPC ceremony messages, wit
 | Edge | Used by | How it works |
 |---|---|---|
 | **Native WebSocket (Socket.IO/EngineIO)** | Linux/desktop cosigners; Binary's `bsv-messagebox-client` already does this | Persistent authed socket, server pushes envelopes by `(recipient_identity, mailbox)` |
-| **FCM push** | Mobile cosigners; rust-message-box already implements `/registerDevice` + the FCM v1 pipeline | Server hits FCM with a wakeup notification when an envelope lands in a registered mailbox; client then issues one HTTP `/listMessages` to drain it |
+| **FCM push** | Mobile cosigners; bsv-messagebox-cloudflare already implements `/registerDevice` + the FCM v1 pipeline | Server hits FCM with a wakeup notification when an envelope lands in a registered mailbox; client then issues one HTTP `/listMessages` to drain it |
 | **HTTP poll** | Browser (no FCM), CF Worker→CF Worker, or paranoid environments that don't want WS | `/listMessages` at adaptive cadence (5 Hz active, 0.5 Hz idle) |
 | **Direct QUIC/WebTransport (post-DKG accelerator)** | Established cosigner pairs after a successful DKG | Each party caches the other's `quic_endpoint` from the CHIP token; falls back to relay on hole-punch failure |
 
-**Concretely:** the user's WebSocket steering update means rust-message-box adds Socket.IO/EngineIO over CF Worker DOs in Phase 1 to restore parity with `b1nary.cloud`. The core wire shape *does not change* whether the server pushes via WS, FCM, or poll. **This is the key vendor-neutrality lever**: a cosigner's choice of edge transport is local; it does not propagate into the protocol.
+**Concretely:** the user's WebSocket steering update means bsv-messagebox-cloudflare adds Socket.IO/EngineIO over CF Worker DOs in Phase 1 to restore parity with `<binary-messagebox-host-tbd>`. The core wire shape *does not change* whether the server pushes via WS, FCM, or poll. **This is the key vendor-neutrality lever**: a cosigner's choice of edge transport is local; it does not propagate into the protocol.
 
 **Discovery & bootstrap.** Per-cosigner pinned URL (in their CHIP token PushDrop on `tm_mpc_signing`) is the source of truth. The CHIP token already carries an identity key, capabilities JSON, and reputation; we extend it with a MessageBox URL (or list, for failover).
 
@@ -64,7 +64,7 @@ Invert Option 1's defaults. Direct iroh QUIC connection between parties is the *
 
 **Why this precedent.** iroh's headline thesis is *"IP addresses break, dial keys instead"* — exactly what BRC-31 identity keys give us.
 
-**Killer issue (Operability 7/10):** CF Workers don't expose UDP sockets — QUIC is impossible inside a CF Worker. rust-message-box's whole *raison d'être* is that it runs on CF Workers. **It's a "burn the boats" architecture relative to what's deployed today.**
+**Killer issue (Operability 7/10):** CF Workers don't expose UDP sockets — QUIC is impossible inside a CF Worker. bsv-messagebox-cloudflare's whole *raison d'être* is that it runs on CF Workers. **It's a "burn the boats" architecture relative to what's deployed today.**
 
 **Verdict:** right answer for a network without CF Worker operators. Wrong for ours. Use as an *opportunistic accelerator* for established pairs (Option 1's §06.8 reservation), not as primary.
 
@@ -103,6 +103,6 @@ The single most important spec-lock is §06.3 (the canonical envelope) and §06.
 
 Internal references:
 - `/Users/johncalhoun/bsv/mpc/SWARM-CONVERGENCE.md` §1.1
-- `/Users/johncalhoun/bsv/rust-message-box/src/lib.rs`, `CLAUDE.md`
+- `<bsv-messagebox-cloudflare repo>/src/lib.rs`, `CLAUDE.md`
 - `/Users/johncalhoun/bsv/mpc/rust-mpc/crates/transport/src/{traits,messagebox_transport,messagebox_cosigner,mpc_transport}.rs`
 - `/Users/johncalhoun/bsv/mpc/bsv-mpc/crates/bsv-mpc-proxy/src/bridge.rs`

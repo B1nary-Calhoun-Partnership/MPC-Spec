@@ -63,15 +63,13 @@ On startup, each cosigner MUST:
 
 Failure to verify MUST cause the cosigner to refuse to start (fail-closed). Logs a clear error and exits non-zero.
 
-## 17.7 TEE attestation cross-check
+## 17.7 TEE attestation cross-check (v2 reserved)
 
-When the cosigner runs in a TEE (§16.7), the TEE attestation includes the binary measurement (SHA-256 / PCR / MRTD).
+**Not applicable in v1.** v1 ships without TEE per §16.1 — cost-benefit doesn't justify it.
 
-Counterparties MUST verify both:
-- The TEE attestation is valid (signed by the TEE root keys).
-- The binary measurement in the attestation matches the binary's Rekor entry.
+When v2 adds TEE deployment as an option, the TEE attestation will include the binary measurement (SHA-256 / PCR / MRTD), and counterparties will verify both the TEE attestation (signed by TEE root keys) AND the binary measurement matching the Rekor entry. Together that proves "this code was produced by an authorized CI run AND is currently running in a genuine TEE."
 
-Together, this proves: "this code was produced by an authorized CI run AND is currently running in a genuine TEE."
+For v1, supply-chain provenance is **build-time only** via the §17.1–§17.6 chain. Runtime cross-check is bounded by share-refresh cadence (§16.5).
 
 ## 17.8 Revocation
 
@@ -86,14 +84,14 @@ Time-to-revoke globally: bounded by cosigner restart interval (typically <24h wi
 
 ## 17.9 Conformance
 
-A cosigner MUST present, on request, the triple `(binary_hash, rekor_uuid, attestation_doc)`.
+A cosigner MUST present, on request, the pair `(binary_hash, rekor_uuid)`. v2 deployments additionally present `attestation_doc`.
 
-Counterparties MAY refuse to participate if any of the three:
+Counterparties MAY refuse to participate if either:
 - Doesn't verify (Rekor signature invalid).
 - Is revoked (per §17.8).
-- Doesn't match (attestation says different binary than the one we're talking to).
+- (v2 only) Attestation says different binary than the one we're talking to.
 
-This is enforced via `RuleKind::RequireAttestation` in policy (§09).
+`RuleKind::RequireAttestation` in policy (§09) is reserved for v2; v1 deployments do not use it.
 
 ## 17.10 BRC-18 audit binding
 
@@ -112,7 +110,7 @@ If a vulnerability is later disclosed in version `X`, every signature produced b
 
 - bsv-mpc currently has no Sigstore integration. Add GitHub Actions reusable workflow.
 - rust-mpc has Docker matrix builds + GHCR push. Extend to add cosign + Rekor + SLSA attestation.
-- rust-message-box has manual quality gates per CLAUDE.md. Add CI + Sigstore.
+- bsv-messagebox-cloudflare has manual quality gates per CLAUDE.md. Add CI + Sigstore.
 - Both implementations MUST commit `Cargo.lock` and ensure `cargo --locked` is used in CI.
 
 ## 17.13 Test vectors

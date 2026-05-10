@@ -28,7 +28,7 @@ What changes for each implementation? What's the migration path?
 
 - **`bsv-mpc`:** [what changes; estimated scope]
 - **`rust-mpc`:** [what changes; estimated scope]
-- **`rust-message-box`:** [what changes; estimated scope, if any]
+- **`bsv-messagebox-cloudflare`:** [what changes; estimated scope, if any]
 - **Spec:** [which sections this decision lands in]
 - **Test vectors:** [what new vectors are required]
 

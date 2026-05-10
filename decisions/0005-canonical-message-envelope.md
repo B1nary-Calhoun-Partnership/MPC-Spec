@@ -56,7 +56,7 @@ The `traceparent` field reservation (CBOR map key 12) lets distributed tracing a
 
 - **`bsv-mpc`:** Implement the canonical envelope. Replace `WireMessage` + `RoundMessage`. Generate test vectors. ~2 days of work (CBOR encoding + BRC-78 wrapper + BRC-31 signing/verifying).
 - **`rust-mpc`:** Replace `MpcEnvelope` with the canonical form. Generate test vectors. ~2 days.
-- **`rust-message-box`:** Add CBOR-aware passthrough (relays MUST NOT modify envelopes; today they pass arbitrary bodies, so this may be a no-op).
+- **`bsv-messagebox-cloudflare`:** Add CBOR-aware passthrough (relays MUST NOT modify envelopes; today they pass arbitrary bodies, so this may be a no-op).
 - **Spec:** [`§05-message-envelope.md`](../05-message-envelope.md) codifies the schema and canonical CBOR encoding.
 - **Test vectors:** Concrete envelope examples in `conformance/test-vectors/05-message-envelope.cbor` (binary) and `.diag.txt` (CBOR diagnostic).
 

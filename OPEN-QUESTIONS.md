@@ -93,18 +93,15 @@ Status legend:
 
 ---
 
-## Q8 🟨 — Cold-tier HSM operator role
+## Q8 🟨 — Cold-tier HSM operator role (DEFERRED to v2)
 
-**Question:** Spec §16 recommends a hybrid hot-TEE + cold-HSM topology. Who operates the cold tier?
+**Question:** Spec §16 originally recommended a hybrid hot-TEE + cold-HSM topology. Who operates the cold tier?
 
-Options:
-- (a) **Per-user choice** — each user picks a cold-tier provider (could be Calhoun, Binary, or a third partner).
-- (b) **Partnership-commissioned third operator** — the partnership stands up or contracts a custodial-tier operator that runs cold cosigners for everyone.
-- (c) **Optional / no cold tier** — leave it to deployments that need it; spec just defines the protocol.
+**Resolution:** **Deferred to v2.** ADR-0016 confirmed v1 ships without HSM cold tier (cost: ~$1K/mo CloudHSM cluster) and without TEE (cost: ~$300/mo per cosigner Nitro). v1 runtime integrity is from threshold + share refresh + audit + witness cosigning. When v2 institutional users appear, this question reopens.
 
-**Recommended resolution:** (c). Spec defines `quorum_profile` enum; users opt into cold-tier per their threat model. Partnership doesn't need to operate cold infrastructure.
+Forward-compat: cert format reserves `attestation` field; policy engine reserves `RuleKind::RequireAttestation`. No wire change needed when v2 activates.
 
-**Becomes:** ADR-0015 (TBD)
+**Becomes:** ADR-0019 or later (when v2 begins).
 
 ---
 

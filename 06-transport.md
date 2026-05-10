@@ -47,12 +47,12 @@ The reservation of QUIC/iroh as the post-DKG accelerator is an OPTIONAL implemen
 
 Each cosigner SHALL publish in its CHIP token (§12) a `transport.inbox_url` and zero or more `transport.inbox_url_fallback`. A coordinator routing to that cosigner MUST attempt the primary URL first, then each fallback in order.
 
-Cosigners MAY pin different MessageBox operators (e.g., `message.b1nary.cloud`, `rust-message-box.dev-a3e.workers.dev`); the protocol does not require any single relay to be reachable by all parties simultaneously, only that each party's chosen relay is reachable by *every other party*.
+Cosigners MAY pin different MessageBox operators (e.g., `<binary-messagebox-host-tbd>`, `<calhoun-messagebox-deploy-tbd>`); the protocol does not require any single relay to be reachable by all parties simultaneously, only that each party's chosen relay is reachable by *every other party*.
 
 Both production relays MUST support the WebSocket receive transport (Socket.IO/EngineIO compatible) for v1 conformance:
 
-- **`message.b1nary.cloud`** (Binary): currently supports WebSocket. No change required.
-- **`rust-message-box.dev-a3e.workers.dev`** (Calhoun): currently HTTP-only (v2 scope). Calhoun extends with Socket.IO over CF Worker Durable Objects in Phase 1 to restore parity. Reverses the prior v2 scope decision; ADR-0006 records the design change.
+- **`<binary-messagebox-host-tbd>`** (Binary): currently supports WebSocket. No change required.
+- **`<calhoun-messagebox-deploy-tbd>`** (Calhoun): currently HTTP-only (v2 scope). Calhoun extends with Socket.IO over CF Worker Durable Objects in Phase 1 to restore parity. Reverses the prior v2 scope decision; ADR-0006 records the design change.
 
 ## 06.8 Discovery and bootstrap
 
@@ -100,7 +100,7 @@ Acknowledgement is best-effort; protocol correctness does NOT depend on relay-si
 
 - bsv-mpc currently uses direct HTTP between proxy and KSS (`bridge.rs`). MUST add MessageBox transport client (port from rust-mpc) to participate in cross-impl ceremonies.
 - rust-mpc currently uses Binary's `bsv-messagebox-client` 0.1.1 (Socket.IO/EngineIO over WebSocket). No change required for transport; one fix needed for presigning round handling (see [`OPEN-QUESTIONS.md` Q3](OPEN-QUESTIONS.md)).
-- rust-message-box currently HTTP-only (v2 scope, `MessageRoom` Durable Object class deleted). Calhoun adds Socket.IO over CF Worker DOs to restore WebSocket parity with `message.b1nary.cloud`.
+- bsv-messagebox-cloudflare currently HTTP-only (v2 scope, `MessageRoom` Durable Object class deleted). Calhoun adds Socket.IO over CF Worker DOs to restore WebSocket parity with `<binary-messagebox-host-tbd>`.
 
 ## See also
 

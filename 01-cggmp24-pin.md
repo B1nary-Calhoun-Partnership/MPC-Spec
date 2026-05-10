@@ -30,6 +30,7 @@ CGGMP'24 upstream exposes `set_derivation_path(path)` for SLIP-10/BIP-32-style H
 
 A 4-line public method `set_additive_shift(scalar)` is required to expose the existing internal `additive_shift` field directly. Until upstream merges:
 
+- The fork at `Calgooon/cggmp21-fork` is currently private. Before Phase 0 ships, Calhoun MUST either (a) make the fork public (recommended location: `Calhooon/cggmp21-fork` under the public org) or (b) grant Binary read access to the private Calgooon repo. The upstream PR opened week 1 is the path to retiring this fork entirely.
 - Both implementations MUST point at Calhoun's fork via Cargo `[patch."https://github.com/LFDT-Lockness/cggmp21"]` directive:
   ```toml
   [patch."https://github.com/LFDT-Lockness/cggmp21"]

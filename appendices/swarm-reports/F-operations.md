@@ -5,6 +5,10 @@
 
 ---
 
+> **Note on v1 vs v2 (2026-05-10):** This report's recommended Option 3 (hybrid hot-TEE + cold-HSM via resharing) was de-prioritized for v1 per [`ADR-0016`](../../decisions/0016-v1-ops-topology-no-tee-no-hsm.md). Cost analysis: AWS Nitro at ~$300/mo per cosigner + AWS CloudHSM at ~$1K/mo cluster is excessive for v1's per-signature-pricing thesis. v1 ships with standard cloud cosigners; cryptographic invariants (threshold + refresh + audit + witness cosigning + share encryption) provide v1 security posture without enclave hardware. The hybrid topology described below is the v2 institutional target when regulatory pressure for hardware-backed key custody appears. Forward-compat hooks (cert `attestation` field, policy `RequireAttestation` rule) remain in v1 spec but are not activated.
+
+---
+
 ## §A: God-Tier Definition (Ops/SRE Layer)
 
 **God-tier ops for an MPC threshold-signing network** is: *a debuggable, blameless, vendor-neutral choreography of cryptographic ceremonies across mutually-distrusting operators, with cryptographic supply-chain provenance from source to running enclave, where every share-touching action is observable from a public-facing SLO dashboard but no observer ever learns a share, and where any single operator can be replaced with sub-hour MTTR without cooperation from the others.*

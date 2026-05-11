@@ -1,6 +1,7 @@
 # 13 — Federation
 
 **Status:** DRAFT
+**Version:** v2 (partial cross-signing in v1 via §13.2; operator-replacement §13.7 is v2)
 **Phase:** 2
 **Decided by:** ADR-0013 (proposed)
 **Last updated:** 2026-05-10

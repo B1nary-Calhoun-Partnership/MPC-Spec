@@ -1,6 +1,7 @@
 # 07 — BRC-31 Mutual Authentication
 
 **Status:** DRAFT
+**Version:** v1
 **Phase:** 1
 **Decided by:** ADR-0007 (proposed)
 **Last updated:** 2026-05-10

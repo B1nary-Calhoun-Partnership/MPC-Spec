@@ -1,6 +1,7 @@
 # 15 — Notary Product
 
 **Status:** DRAFT
+**Version:** v1
 **Phase:** 3
 **Decided by:** ADR-0015 (proposed)
 **Last updated:** 2026-05-10

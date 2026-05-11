@@ -1,6 +1,7 @@
 # 17 — Supply Chain
 
 **Status:** DRAFT
+**Version:** v1
 **Phase:** 2
 **Decided by:** ADR-0017 (proposed)
 **Last updated:** 2026-05-10

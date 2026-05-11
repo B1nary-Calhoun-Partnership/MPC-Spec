@@ -1,6 +1,7 @@
 # 04 — Canonical SessionId
 
 **Status:** LOCKED (pending ADR-0004 sign-off)
+**Version:** v1
 **Phase:** 0
 **Decided by:** ADR-0004
 **Last updated:** 2026-05-10

@@ -1,6 +1,7 @@
 # 03 — Canonical BRC-42 Invoice
 
 **Status:** LOCKED (pending ADR-0002 sign-off)
+**Version:** v1
 **Phase:** 0
 **Decided by:** ADR-0002
 **Last updated:** 2026-05-10

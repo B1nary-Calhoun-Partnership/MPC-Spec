@@ -1,6 +1,7 @@
 # 02 — Canonical ExecutionId
 
 **Status:** LOCKED (pending ADR-0003 sign-off)
+**Version:** v1
 **Phase:** 0
 **Decided by:** ADR-0003
 **Last updated:** 2026-05-10

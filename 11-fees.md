@@ -1,6 +1,7 @@
 # 11 — Fees
 
 **Status:** DRAFT
+**Version:** v1
 **Phase:** 2
 **Decided by:** ADR-0011 (proposed)
 **Last updated:** 2026-05-10

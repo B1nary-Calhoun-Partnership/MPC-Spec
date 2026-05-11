@@ -1,6 +1,7 @@
 # 09 — Policy Engine
 
 **Status:** DRAFT
+**Version:** v1
 **Phase:** 1
 **Decided by:** ADR-0009 (proposed)
 **Last updated:** 2026-05-10

@@ -1,6 +1,7 @@
 # 16 — Operations & SRE
 
 **Status:** DRAFT
+**Version:** v1
 **Phase:** 2
 **Decided by:** ADR-0016 (proposed)
 **Last updated:** 2026-05-10

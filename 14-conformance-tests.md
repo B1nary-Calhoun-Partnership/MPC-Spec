@@ -1,6 +1,7 @@
 # 14 — Conformance Tests
 
 **Status:** PLACEHOLDER
+**Version:** v1
 **Phase:** 4
 **Decided by:** ADR-0014 (TBD)
 **Last updated:** 2026-05-10

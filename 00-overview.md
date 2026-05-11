@@ -1,6 +1,7 @@
 # 00 — Overview
 
 **Status:** LOCKED
+**Version:** v1
 **Last updated:** 2026-05-10
 
 ## Purpose

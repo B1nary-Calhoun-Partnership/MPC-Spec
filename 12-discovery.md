@@ -1,6 +1,7 @@
 # 12 — Discovery (CHIP token, BRC-22 overlay)
 
 **Status:** DRAFT
+**Version:** v1
 **Phase:** 3
 **Decided by:** ADR-0012 (proposed)
 **Last updated:** 2026-05-10

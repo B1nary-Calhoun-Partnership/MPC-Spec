@@ -1,6 +1,7 @@
 # 01 — TSS Protocol Pin
 
 **Status:** LOCKED (pending ADR-0001 sign-off)
+**Version:** v1
 **Phase:** 0
 **Decided by:** ADR-0001
 **Last updated:** 2026-05-10

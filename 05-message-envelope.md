@@ -1,6 +1,7 @@
 # 05 — Canonical Message Envelope
 
 **Status:** LOCKED (pending ADR-0005 sign-off)
+**Version:** v1
 **Phase:** 0
 **Decided by:** ADR-0005
 **Last updated:** 2026-05-10

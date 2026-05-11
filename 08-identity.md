@@ -24,6 +24,7 @@ Wire format: **BRC-52 binary serialization** per `~/bsv/BRCs/peer-to-peer/0052.m
 - `notAfter` — RFC-3339 UTC timestamp. Maximum 24h for cosigner certs, 1h for human-approver certs, 7d for federation root certs.
 - `policy_hash` — REQUIRED for cosigner certs. Hex SHA-256 of canonical-CBOR policy manifest (§09).
 - `ctlog_proof` — REQUIRED. Base64 inclusion proof against transparency log topic `tm_mpc_certs_v1` (§08.7).
+- `audit_identity` — REQUIRED for cosigner certs. Compressed secp256k1 pubkey (33B hex) of the cosigner's audit identity key, distinct from the cert's `subject` signing key. Used to lock STH PushDrops (§10.5).
 
 ### Optional fields
 

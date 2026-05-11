@@ -150,6 +150,18 @@ Options:
 
 ---
 
+## Q13 🟨 — Should BRC-18 participation proofs also be PushDrop tokens?
+
+**Question:** §10.5 changed STH publication from OP_RETURN to PushDrop chain (ADR-0019). §10.7 BRC-18 participation proofs remain OP_RETURN. Should they also move to PushDrop, with "unspent proof = reputation token" semantics (Mitch's interpretation B from the original Slack thread)?
+
+**Context:** Each successful signing emits a BRC-18 proof. If proofs were PushDrops locked to the cosigner identity, the unspent set would be a verifiable reputation count. Cosigners could "spend" reputation for various purposes (fee settlement, dispute resolution, etc.). Adds product surface but requires careful design.
+
+**Recommended resolution:** v1 keeps BRC-18 as OP_RETURN (no chain semantics needed for independent per-ceremony attestations). Revisit in v1.5 if a concrete reputation/staking use case emerges.
+
+**Becomes:** ADR-0020 or later (v1.5+).
+
+---
+
 ## Resolution log
 
 (Each Q closes here when its ADR is accepted.)

@@ -67,33 +67,103 @@ AuditEntry = {
 
 Canonical CBOR encoding per RFC 8949 §4.2.
 
-## 10.5 STH publication to BSV
+## 10.5 STH publication to BSV (PushDrop chain)
 
-Every **60 seconds** (default, configurable per cosigner — minimum 30s, maximum 300s), the cosigner MUST:
+Every **60 seconds** (default, configurable per cosigner — minimum 30s, maximum 300s), the cosigner MUST publish their current STH as a **PushDrop output** (BRC-23) on BRC-22 overlay topic `tm_mpc_audit`. The publication is a Bitcoin transaction that:
 
-1. Compute the current Merkle tree root.
-2. Sign a Signed Tree Head:
-   ```
-   STH = {
-     tree_size:  u64,
-     root_hash:  bstr32,
-     timestamp_ms: u64,
-     signature:  bstr (BRC-77 over canonical CBOR of fields 1-3)
-   }
-   ```
-3. Publish a BRC-18 OP_RETURN on BRC-22 overlay topic `tm_mpc_audit`:
-   ```
-   OP_FALSE OP_RETURN
-     "mpc-audit-sth"     // canonical prefix
-     0x01                // version
-     cosigner_identity_33B
-     tree_size_8B (BE u64)
-     root_hash_32B
-     timestamp_ms_8B (BE u64)
-     brc77_signature
-   ```
+1. **Spends the cosigner's previous STH PushDrop** (or, for the initial publication, any UTXO the cosigner controls — the genesis tx of the chain).
+2. **Creates a new PushDrop output** locked to the cosigner's audit identity key, containing the new STH fields.
 
-The on-chain cost is ~0.001¢ per epoch — negligible at scale.
+The chain of spends across time IS the audit log. Chain continuity is enforced by UTXO consensus: only the holder of the audit identity private key can spend the previous output and create the next one. Tamper requires double-spending a UTXO — consensus-impossible, not merely detectable.
+
+### 10.5.1 PushDrop field layout
+
+The locking script follows the BRC-23 PushDrop pattern:
+
+```
+<bstr "mpc-audit-sth">              // canonical prefix (13 ASCII bytes)
+<bstr 0x01>                          // version byte: mpc-spec-v1
+<bstr cosigner_audit_identity_33B>   // BRC-31 audit identity pubkey
+<bstr tree_size_8B_BE>               // monotonically increasing u64
+<bstr root_hash_32B>                 // current Merkle tree root
+<bstr timestamp_ms_8B_BE>            // u64 Unix milliseconds
+<bstr brc77_signature>               // signature over (prefix||version||tree_size||root_hash||timestamp)
+OP_DROP OP_DROP OP_DROP OP_DROP OP_DROP OP_DROP OP_DROP   // drop all 7 push fields
+<bstr cosigner_audit_identity_33B>   // locking pubkey (same as above)
+OP_CHECKSIG
+```
+
+The output value SHOULD be `dust + 50 sats` (~50 sats) to minimize stranded value while remaining above the BSV dust threshold.
+
+### 10.5.2 Genesis transaction
+
+The first STH PushDrop in a cosigner's chain has no prior PushDrop to spend. It MAY consume any UTXO the cosigner controls. The `tree_size` MUST be 1 (one leaf in the audit log) and the prior-chain field MUST be absent.
+
+Implementations SHOULD publish the genesis tx as part of cosigner provisioning (alongside the BRC-52⊕ cert issuance in §08).
+
+### 10.5.3 Subsequent transactions
+
+Every subsequent STH publication is a transaction that:
+
+- Has exactly one input spending the cosigner's previous STH PushDrop.
+- Has exactly one PushDrop output with the new STH per §10.5.1.
+- MAY have additional inputs / outputs (e.g., for fee top-up if the chain's sat balance drops too low; for fee output during routine signing — see §11.6).
+
+### 10.5.4 Audit identity key
+
+The audit identity is a **separate, long-lived** BRC-31 keypair distinct from the cosigner's signing identity. Required because:
+
+- Signing identity rotates every 90 days (§16.8); breaking the audit chain at every rotation is unacceptable.
+- Audit identity rotates only via the explicit chain-rotation ceremony (§10.5.6).
+- Audit identity does NOT participate in MPC ceremonies and SHOULD be held in stricter custody (hardware-backed where possible).
+
+The audit identity is bound to the cosigner via a BRC-52⊕ cert (§08) issued by the certifier, listing the audit identity pubkey in `fields["audit_identity"]`.
+
+### 10.5.5 Stranded UTXO fallback
+
+If a cosigner goes silent for an extended period, their final PushDrop is permanently locked under the audit identity key. To enable garbage collection, the PushDrop locking script MAY include a CHECKLOCKTIMEVERIFY fallback:
+
+```
+OP_IF
+  <cosigner_audit_pubkey> OP_CHECKSIG       // primary spend path
+OP_ELSE
+  <timestamp + 90 days> OP_CHECKLOCKTIMEVERIFY OP_DROP
+  OP_TRUE                                    // anyone-can-spend after timeout
+OP_ENDIF
+```
+
+90 days is chosen as 3× the routine refresh cadence (§16.5, RR-001 = 30 days) — beyond this, the cosigner is unambiguously decommissioned.
+
+Implementations MAY omit the fallback if they accept that the ~50 sats per decommissioned cosigner is permanently locked (acceptable cost in most operational models).
+
+### 10.5.6 Chain rotation (audit identity key rotation)
+
+If the cosigner needs to rotate their audit identity key (e.g., compromise, scheduled rotation), they MUST publish a **chain-rotation transaction**:
+
+1. Spend the previous STH PushDrop with the OLD audit identity key.
+2. Create a new PushDrop locked to the NEW audit identity, with `fields["prev_audit_identity"]` = old audit pubkey and a `BRC-77` signature from BOTH old and new keys.
+3. Update the cosigner's BRC-52⊕ cert (§08) to reflect the new audit identity.
+
+Verifiers follow the chain through the rotation by checking both signatures. The rotation is one transaction — it doesn't break chain continuity at the UTXO layer.
+
+### 10.5.7 Verification procedure
+
+Given `(joint_pubkey, sighash)`, a verifier:
+
+1. Look up the cosigner's BRC-52⊕ cert to find their `audit_identity` field.
+2. Find the cosigner's **latest unspent STH PushDrop** at `tm_mpc_audit` for that audit identity. This is a single UTXO lookup.
+3. Walk the chain backward via transaction inputs until reaching the genesis tx.
+4. At each step, verify: monotonic `tree_size`, BRC-77 signature validity, audit identity continuity (with rotation-ceremony exceptions allowed per §10.5.6).
+5. For a specific `AuditEntry`, fetch the Merkle inclusion proof from the cosigner's local Rekor log and verify against the appropriate STH on the chain.
+
+### 10.5.8 Cost
+
+Per-STH cost is **only the transaction fee** (~1–2 sats at current mainnet rates). Setup cost is one-time per cosigner (~50 sats for the genesis PushDrop). At 60s publication cadence (1,440 STHs/day, ~525K/year per cosigner), annual cost per cosigner is approximately:
+
+- Genesis tx: 50 sats (~$0.000025 at $50/BSV)
+- Per-STH tx fee: ~1.5 sats × 525,000 = ~787,500 sats (~$0.40)
+
+Compared to OP_RETURN publication (~100 sats per STH = ~52M sats/yr = ~$22/yr), this is a **~50× cost reduction**.
 
 ## 10.6 Witness cosigning
 
@@ -112,6 +182,8 @@ This is the cross-cosigner cross-check that gives non-repudiation in the asymmet
 ## 10.7 BRC-18 participation proofs
 
 A BRC-18 participation proof is a **projection** of the audit log: it cites `(audit_root, audit_index)` and the relevant `AuditEntry` rather than re-encoding the participants.
+
+BRC-18 proofs are published as **OP_RETURN** outputs (not PushDrop). Rationale: BRC-18 proofs are per-ceremony attestations with no chain semantics — each is independent, none needs to be spent later. The PushDrop chain pattern (§10.5) applies to per-cosigner STHs, not per-ceremony proofs. A future v1.5 question of "should BRC-18 proofs also be PushDrop tokens?" (reputation/stake semantics) is tracked in OPEN-QUESTIONS Q13.
 
 ```
 OP_FALSE OP_RETURN

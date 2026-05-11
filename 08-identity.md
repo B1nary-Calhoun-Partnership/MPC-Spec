@@ -166,7 +166,7 @@ User identity rotation is handled by the BRC-100 wallet (out of scope for this s
 
 ## 08.12 Deprecations
 
-- **rust-mpc's `core::identity::Certificate` custom JSON struct: DEPRECATED.** Replace with the BRC-52 binary format defined here. Policy engine's `verify_party_certificate` (`engine.rs:259-305`) moves to verify BRC-52. See [`OPEN-QUESTIONS.md` Q4](OPEN-QUESTIONS.md) and ADR-0011.
+- **rust-mpc's `core::identity::Certificate` custom JSON struct: DEPRECATED.** Replace with the BRC-52 binary format defined here. Policy engine's `verify_party_certificate` (`engine.rs:259-305`) moves to verify BRC-52. See [`OPEN-QUESTIONS.md` Q4](OPEN-QUESTIONS.md) and ADR-0023.
 - **bsv-mpc has no certificate today.** MUST add BRC-52 verifier in `bsv-mpc-worker/src/auth.rs` alongside the existing BRC-31 session check.
 
 ## 08.13 Implementation notes — required rust-mpc certifier hardening

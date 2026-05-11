@@ -173,7 +173,7 @@ action = "Deny"
 
 ## 09.12 Cedar migration path
 
-The CBOR schema is intentionally Cedar-shaped so a migration to Cedar (AWS Verified Permissions, Rust-native, Dafny-verified) is mechanical when Cedar's `wasm32-unknown-unknown [no_std]` story matures. See [`OPEN-QUESTIONS.md` Q5](OPEN-QUESTIONS.md) and ADR-0012.
+The CBOR schema is intentionally Cedar-shaped so a migration to Cedar (AWS Verified Permissions, Rust-native, Dafny-verified) is mechanical when Cedar's `wasm32-unknown-unknown [no_std]` story matures. See [`OPEN-QUESTIONS.md` Q5](OPEN-QUESTIONS.md) and ADR-0024.
 
 ## 09.13 Implementation notes
 

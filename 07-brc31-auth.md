@@ -87,7 +87,7 @@ Compromised key rotation is on the IR-002 path (§16, sub-30-min).
 - bsv-mpc `bsv-mpc-worker/src/auth.rs` — full BRC-31 implementation. Use as reference.
 - bsv-mpc `bsv-mpc-service` — same auth.rs reused.
 - bsv-mpc THREAT-MODEL.md A4/A7 — currently labels BRC-31 as TODO; the doc is stale. MUST scrub.
-- rust-mpc `bins/certifier/src/handlers.rs` — `/signCertificate` currently accepts unauthenticated requests. MUST gate behind BRC-31. See [`OPEN-QUESTIONS.md` Q4 / ADR-0011](OPEN-QUESTIONS.md).
+- rust-mpc `bins/certifier/src/handlers.rs` — `/signCertificate` currently accepts unauthenticated requests. MUST gate behind BRC-31. See [`OPEN-QUESTIONS.md` Q4 / ADR-0023](OPEN-QUESTIONS.md).
 - rust-mpc `crates/transport/` — already uses BRC-31 via Binary's `bsv-messagebox-client`. No change.
 
 ## 07.11 Test vectors

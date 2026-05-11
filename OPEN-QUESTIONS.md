@@ -29,7 +29,7 @@ Status legend:
 
 **Recommended resolution:** Move into `brc42` crate as `combine_ecdh_partials_lagrange(partials, vss_setup)`. Force the canonical form.
 
-**Becomes:** ADR-0009 (TBD)
+**Becomes:** ADR-0021 (TBD)
 
 ---
 
@@ -41,7 +41,7 @@ Status legend:
 
 **Recommended resolution:** Implement `presign_round` over MessageBox using the same envelope as DKG/sign rounds. ExecutionId already binds the ceremony, so round-binding is straightforward. With WebSocket-canonical receive, presig rounds match DKG/sign rounds in shape.
 
-**Becomes:** ADR-0010 (TBD)
+**Becomes:** ADR-0022 (TBD)
 
 ---
 
@@ -53,7 +53,7 @@ Status legend:
 
 **Recommended resolution:** Yes. Move policy engine's `verify_party_certificate` to verify BRC-52. Migrate cosigner identities. Deprecation can be progressive (accept both for one release, then drop the custom struct).
 
-**Becomes:** ADR-0011 (TBD)
+**Becomes:** ADR-0023 (TBD)
 
 ---
 
@@ -65,7 +65,7 @@ Status legend:
 
 **Recommended resolution:** Yes. Schema lives in `mpc-policy-shared` crate. Migrate when Cedar WASM lands.
 
-**Becomes:** ADR-0012 (TBD)
+**Becomes:** ADR-0024 (TBD)
 
 ---
 
@@ -77,7 +77,7 @@ Status legend:
 
 **Recommended resolution:** Reserve Iroh in §06 as opportunistic accelerator. Spec language allows substitution with WebTransport or libp2p QUIC at implementation discretion. The MPC layer doesn't observe the substrate — only that envelope delivery happened.
 
-**Becomes:** ADR-0013 (TBD)
+**Becomes:** ADR-0025 (TBD)
 
 ---
 
@@ -89,19 +89,19 @@ Status legend:
 
 **Recommended resolution:** Reserve `0x03`. Do not implement v1. Revisit when/if BSV proposes Schnorr support.
 
-**Becomes:** ADR-0014 (TBD; may stay in OPEN-QUESTIONS if BSV doesn't move)
+**Becomes:** ADR-0026 (TBD; may stay in OPEN-QUESTIONS if BSV doesn't move)
 
 ---
 
-## Q8 🟨 — Cold-tier HSM operator role (DEFERRED to v2)
+## Q8 🟨 — Cold-tier HSM operator role (RESOLVED — DEFERRED to v2 by ADR-0016)
 
 **Question:** Spec §16 originally recommended a hybrid hot-TEE + cold-HSM topology. Who operates the cold tier?
 
-**Resolution:** **Deferred to v2.** ADR-0016 confirmed v1 ships without HSM cold tier (cost: ~$1K/mo CloudHSM cluster) and without TEE (cost: ~$300/mo per cosigner Nitro). v1 runtime integrity is from threshold + share refresh + audit + witness cosigning. When v2 institutional users appear, this question reopens.
+**Resolution:** **Resolved by [ADR-0016](decisions/0016-v1-ops-topology-no-tee-no-hsm.md).** v1 ships without HSM cold tier (cost: ~$1K/mo CloudHSM cluster) and without TEE (cost: ~$300/mo per cosigner Nitro). v1 runtime integrity is from threshold + share refresh + audit + witness cosigning. The v2 reopen of this question (when institutional users appear) will be filed as a successor ADR at that time — number to be assigned then, not pre-allocated here.
 
 Forward-compat: cert format reserves `attestation` field; policy engine reserves `RuleKind::RequireAttestation`. No wire change needed when v2 activates.
 
-**Becomes:** ADR-0019 or later (when v2 begins).
+**Becomes:** Resolved by ADR-0016. See Resolution log below. A v2 successor ADR (number TBD when filed) reopens the cold-tier operator role question.
 
 ---
 
@@ -116,7 +116,7 @@ Options:
 
 **Recommended resolution:** (c). Default (a). Power users opt into (b) via spec extension.
 
-**Becomes:** ADR-0016 (TBD)
+**Becomes:** ADR-0027 (TBD)
 
 ---
 
@@ -126,7 +126,7 @@ Options:
 
 **Recommended resolution:** Co-owned. Test vectors are language-neutral (JSON / hex). Each implementation writes its own runner that loads the vectors and asserts. CI in this repo runs both runners against the canonical vectors.
 
-**Becomes:** ADR-0017 (TBD)
+**Becomes:** ADR-0028 (TBD)
 
 ---
 
@@ -158,7 +158,7 @@ Options:
 
 **Recommended resolution:** v1 keeps BRC-18 as OP_RETURN (no chain semantics needed for independent per-ceremony attestations). Revisit in v1.5 if a concrete reputation/staking use case emerges.
 
-**Becomes:** ADR-0020 or later (v1.5+).
+**Becomes:** ADR-0029 (v1.5+).
 
 ---
 
@@ -168,4 +168,4 @@ Options:
 
 | Q | Resolution | ADR | Date |
 |---|---|---|---|
-| (none yet) | | | |
+| Q8 | Cold-tier HSM operator role deferred to v2; v1 ships without HSM/TEE. v2 successor ADR to be filed (number TBD) when institutional users appear. | [ADR-0016](decisions/0016-v1-ops-topology-no-tee-no-hsm.md) | 2026-05-10 |

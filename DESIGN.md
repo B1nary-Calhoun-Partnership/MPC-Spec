@@ -75,7 +75,7 @@ Plus: `policy_hash` binds cert to canonical-CBOR PolicyManifest (§09); `attesta
 - Witness co-signing is the strongest practical audit-integrity guarantee available without TEE.
 - BSV anchoring resolves the three-way OP_RETURN prefix conflict (draft / core / overlay disagree).
 
-**Rejected for v1: Cedar.** Strongest competitor — Rust-native, Dafny-verified, formally proven sound, AWS Verified Permissions in production. Today Cedar requires `std`, kills bsv-mpc-worker WASM. **Schema is intentionally Cedar-shaped so migration is mechanical when Cedar's `[no_std]` matures.** See ADR-0012 path.
+**Rejected for v1: Cedar.** Strongest competitor — Rust-native, Dafny-verified, formally proven sound, AWS Verified Permissions in production. Today Cedar requires `std`, kills bsv-mpc-worker WASM. **Schema is intentionally Cedar-shaped so migration is mechanical when Cedar's `[no_std]` matures.** See ADR-0024 path.
 
 **Rejected for v1: OPA/Rego.** ~30MB, doesn't run in CF Workers. Park as v2 federation upgrade if WASM-OPA matures.
 

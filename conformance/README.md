@@ -4,7 +4,7 @@ Both implementations (`bsv-mpc`, `rust-mpc`) MUST produce byte-equivalent result
 
 ## Status
 
-**Phase 0 / DRAFT.** Test vector files are placeholders until both implementations cross-validate them. ADR-0017 will lock the runner architecture once both stewards agree.
+**Phase 0 / DRAFT.** Test vector files are placeholders until both implementations cross-validate them. ADR-0028 will lock the runner architecture once both stewards agree.
 
 See [`OPEN-QUESTIONS.md` Q10](../OPEN-QUESTIONS.md) for the runner-ownership question.
 

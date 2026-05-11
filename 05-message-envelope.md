@@ -179,13 +179,59 @@ CBOR map keys not listed in §05.3 are RESERVED for future spec versions. Implem
 
 ## 05.11 Test vectors
 
-In `conformance/test-vectors/05-message-envelope.cbor` (binary) and `conformance/test-vectors/05-message-envelope.diag.txt` (CBOR diagnostic notation).
+The canonical envelope vector — a sign-phase round-1 envelope from party 0 to party 1, with all 12 fields populated — is committed to:
 
-Examples include:
-- A signing-round-1 envelope from party 0 to party 1.
-- A DKG-keygen broadcast envelope (`to_party = 0xFFFF`, replicated per recipient).
-- A presign envelope with `traceparent` set.
-- An invalid envelope (signature mismatch) for negative-test.
+- [`conformance/test-vectors/05-message-envelope.json`](conformance/test-vectors/05-message-envelope.json) — inputs, intermediates, and outputs
+- [`conformance/test-vectors/05-message-envelope.cbor.hex`](conformance/test-vectors/05-message-envelope.cbor.hex) — the canonical CBOR bytes (hex)
+- [`conformance/test-vectors/05-message-envelope.diag.txt`](conformance/test-vectors/05-message-envelope.diag.txt) — CBOR diagnostic notation
+
+The vector uses pinned **test-only** ephemeral keys (committed alongside) so anyone can re-derive byte-for-byte:
+
+```
+sender_identity_priv      = 0x01 * 32       (test-only)
+recipient_identity_priv   = 0x02 * 32       (test-only)
+ephemeral_priv (BRC-78)   = 0x03 * 32       (test-only)
+AES-GCM IV                = 0x0a0b0c0d0e0f101112131415  (12 B, test-only)
+inner cggmp24 msg         = ASCII "cggmp24-test-inner-msg-round-1"
+
+derived:
+sender_identity_pub       = 0x031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f
+recipient_identity_pub    = 0x024d4b6cd1361032ca9bd2aeb9d900aa4d45d9ead80ac9423374c451a7254d0766
+ephemeral_pub             = 0x02531fe6068134503d2723133227c867ac8fa6c83c537e9a44c3c5bdbdcb1fe337
+```
+
+The fields:
+
+```
+1  version            = 0x01
+2  session_id         = 0xf25e7c5e560e01926dfbfd70f3940352c1349e1e69a2f17c1668bda988014e0b
+                        (= SHA-256("test-vector-A"); reuses §02 vector A)
+3  joint_pubkey       = 0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
+                        (secp256k1 generator G compressed)
+4  phase              = "sign"
+5  round              = 1
+6  from_party         = 0
+7  to_party           = 1
+8  inner (BRC-78)     = eph_pub_33 ‖ iv_12 ‖ ct ‖ tag_16   (91 B total)
+                      = 0x02531fe6068134503d2723133227c867ac8fa6c83c537e9a44c3c5bdbdcb1fe337
+                        0a0b0c0d0e0f101112131415
+                        f13be86e8433c4c68a15b37b91550a1d93ad2bb8ec287d52bbad7feac2d93d6
+                        74cf36efa033da0a4ccd95546db30
+9  sender_sig_brc31   = DER-encoded ECDSA, low-s normalized, deterministic (RFC 6979):
+                        0x3045022100fc58dab9180a0df200d7e99b6bdeb3fdbce11454d842a8215d
+                        6372ec698e64300220132d9efd5ba99f4b9e7a1ad19e369b33d7d8380c57d6
+                        10619e42ff5e234bdab1
+10 execution_id_prefix= 0x7286fe7b26a8ef9a
+                        (first 8 bytes of §02 vector A ExecutionId)
+11 correlation_id     = "01927f9f-7050-7a4d-a3c5-deadbeefcafe"  (fake UUIDv7)
+12 traceparent        = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+```
+
+Full envelope CBOR: **361 bytes**, canonical per RFC 8949 §4.2. The exact hex is committed verbatim in [`conformance/test-vectors/05-message-envelope.cbor.hex`](conformance/test-vectors/05-message-envelope.cbor.hex) (single-line file; do not transcribe — read the file directly to avoid byte-level copy errors).
+
+Cross-validation: two independent canonical-CBOR encoders (Python `cbor2 canonical=True` and a hand-rolled deterministic encoder) and an independent Rust encoder all produce the same byte string; the BRC-31 ECDSA signature verifies with both Python `ecdsa` and Rust `k256::ecdsa`.
+
+Additional vectors (broadcast envelope with `to_party = 0xFFFF`, presign-phase envelope, negative-test envelope with signature mismatch) are planned for Phase 1; track in [`14-conformance-tests.md`](14-conformance-tests.md).
 
 ## See also
 

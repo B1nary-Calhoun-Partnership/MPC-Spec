@@ -98,30 +98,48 @@ A SessionId is valid for the ceremony only. Persistent identifiers (the joint pu
 
 ## 04.10 Test vectors
 
-In `conformance/test-vectors/04-session-id.json`. Examples:
+The locked machine-readable values live in [`conformance/test-vectors/04-session-id.json`](conformance/test-vectors/04-session-id.json) and are cross-validated by Python (`hashlib`) and Rust (`sha2`).
+
+For both vectors, the three participant byte-strings are 33-byte test identities (`0x02` || 31 zero bytes || sequence byte). They are NOT valid curve points — these vectors exercise the formula's byte-mechanics only.
+
+```
+p1 = 0x02 00 00 ... 00 01    (33 bytes)
+p2 = 0x02 00 00 ... 00 02    (33 bytes)
+p3 = 0x02 00 00 ... 00 03    (33 bytes)
+```
 
 ### 04.10.1 Vector A — Routine 2-of-3 sign
 
 ```
-initiator_identity   = 02aa…(33)
-participants         = [02aa…, 02bb…, 02cc…]  (sorted)
-threshold            = 2
-kind                 = 0x02 (sign)
-nonce                = OsRng-drawn (specific value in JSON)
-payload_digest       = sighash being signed
-SessionId            = TBD — to be cross-validated
+initiator_identity   = p1
+participants_sorted  = [p1, p2, p3]
+threshold            = 2     (LE: 0x0200)
+kind                 = 0x02  (sign)
+nonce                = SHA-256("nonce-A")
+                     = 0x4e1ce45a65d9ba8655a1bacd9d9ec348dbf7a8ab2b719f1b1bb0cf3897c0a2ab
+payload_digest       = SHA-256("sighash-A")
+                     = 0x3bcda18f91ced5eade648ac7f132dbef019bd3590d204734af97713532b63525
+
+SessionId            = 0x5be3c18ab094f090c92be1bac47bee388ab8ead59b987679d9bef53547a16108
 ```
 
 ### 04.10.2 Vector B — DKG with on-chain anchor
 
 ```
-initiator_identity   = 02aa…
-participants         = [02aa…, 02bb…, 02cc…]
+initiator_identity   = p1
+participants_sorted  = [p1, p2, p3]
 threshold            = 2
-kind                 = 0x01 (dkg)
-nonce                = SHA-256(block 800000 hash)
-payload_digest       = SHA-256("genesis" ‖ canonical_cbor(policy_manifest))
-SessionId            = TBD
+kind                 = 0x01  (dkg)
+nonce                = SHA-256("block-800000-anchor")
+                     = 0x39cd67fde05918566d9c5bac114b79af09d67edd50155a44e4b41603433c0210
+                     (stand-in for a real block hash; production usage hashes
+                      a recent BSV block hash per §04.4)
+payload_digest       = SHA-256("genesis" || canonical_cbor({}))
+                     = SHA-256("genesis" || 0xa0)
+                     = 0xf7dc1bd2af02a533ab389c8f67eb4c9c5c49d9c40932129bc2bf6f07b111f232
+                     where canonical_cbor({}) = 0xa0  (empty CBOR map)
+
+SessionId            = 0xe0af05e32667e3553df110a1ff621a5fe7b449b5c515e6886b4b2e38270e6a0f
 ```
 
 ## See also

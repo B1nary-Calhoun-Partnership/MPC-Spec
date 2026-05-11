@@ -61,7 +61,7 @@ No null terminator. No length prefix. No surrounding whitespace. Implementations
 
 These are the canonical test vectors. Both implementations MUST reproduce these byte-for-byte. Failure to match is a P0 conformance bug.
 
-> **Note.** Initial vectors below are illustrative until both implementations have generated and cross-checked them. The actual locked vectors will be inserted in `conformance/test-vectors/02-execution-id.json` and this section updated to reference them.
+The locked machine-readable values live in [`conformance/test-vectors/02-execution-id.json`](conformance/test-vectors/02-execution-id.json) and are cross-validated by two independent implementations (Python `hashlib` and Rust `sha2`) — see [`conformance/test-vectors/README.md`](conformance/test-vectors/README.md) for the reproduction commands.
 
 ### 02.6.1 Vector A — Sign phase, joint key known
 
@@ -70,11 +70,12 @@ domain_separator = "calhoun-binary-mpc"
 version          = 0x01
 algorithm_tag    = 0x01  (cggmp24)
 phase_tag        = 0x04  (sign)
-session_id       = SHA256("test-vector-A") = 0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
-joint_pubkey     = 0x027a01a45fbef62f2f7a14fb4c1ad9e9b9f2f5d8c60c7a3a3c2f5e0bafe19f8cca
+session_id       = SHA256("test-vector-A")
+                 = 0xf25e7c5e560e01926dfbfd70f3940352c1349e1e69a2f17c1668bda988014e0b
+joint_pubkey     = secp256k1 generator G, SEC1 compressed
+                 = 0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
 
-ExecutionId      = SHA256(domain_separator ‖ ... ‖ joint_pubkey)
-                 = TBD — to be computed and locked by both implementations
+ExecutionId      = 0x7286fe7b26a8ef9af0f42c517f53963d642602965b341cc0002084b1e801e883
 ```
 
 ### 02.6.2 Vector B — Keygen phase, joint key unknown
@@ -84,20 +85,29 @@ domain_separator = "calhoun-binary-mpc"
 version          = 0x01
 algorithm_tag    = 0x01
 phase_tag        = 0x01  (keygen)
-session_id       = SHA256("test-vector-B") = 0x...
-joint_pubkey     = 0x00 * 33  (carve-out)
+session_id       = SHA256("test-vector-B")
+                 = 0x8bf9d11c1663da8567389511bdf497a9a3c815c38df2a940f5a396c71465b406
+joint_pubkey     = 0x00 * 33  (carve-out per §02.4)
 
-ExecutionId      = TBD
+ExecutionId      = 0x3bf98ecfaaabc27c71aabfd5d1a41533df7b8e5421f24ca2df5e200f82b0040a
 ```
 
 ### 02.6.3 Vector C — Refresh phase
 
 ```
+domain_separator = "calhoun-binary-mpc"
+version          = 0x01
+algorithm_tag    = 0x01
 phase_tag        = 0x06  (refresh)
-joint_pubkey     = (preserved from prior DKG)
+session_id       = SHA256("test-vector-C")
+                 = 0x8997d07b34f5031f5fc8b00ddc4776120c5bd652923da947c6f2c04c43a05ccd
+joint_pubkey     = secp256k1 generator G, SEC1 compressed
+                 = 0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
+
+ExecutionId      = 0x163ca28a96cee2da1c572c58be0bad3d501099a31f81cd4b3753f8bd02faa5c3
 ```
 
-Full vectors in `conformance/test-vectors/02-execution-id.json` once both implementations cross-validate.
+Full vectors in [`conformance/test-vectors/02-execution-id.json`](conformance/test-vectors/02-execution-id.json).
 
 ## 02.7 Why this formula
 

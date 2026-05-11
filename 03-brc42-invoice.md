@@ -79,9 +79,9 @@ offset_scalar     = Scalar::<Secp256k1>::from_be_bytes_mod_order(hmac_offset_32B
 
 ## 03.5 Test vectors
 
-The 5 "Public Key Derivation" and 5 "Private Key Derivation" test vectors from `~/bsv/BRCs/key-derivation/0042.md` MUST round-trip in both implementations as a CI gate. They are reproduced in `conformance/test-vectors/03-brc42-invoice.json`.
+The 5 "Public Key Derivation" and 5 "Private Key Derivation" test vectors from `~/bsv/BRCs/key-derivation/0042.md` MUST round-trip in both implementations as a CI gate. They are reproduced and computed in [`conformance/test-vectors/03-brc42-invoice.json`](conformance/test-vectors/03-brc42-invoice.json), and confirmed to agree with the BRC-42 spec values by both the Python (`ecdsa` + stdlib) and Rust (`k256` + `hmac`) cross-validators.
 
-Additionally, the spec adds these stress vectors:
+Additionally, the spec adds these stress vectors. The pinned `shared_secret` for stress vectors is the secp256k1 generator `G` compressed (`0x0279be...81798`) — a test-only pin so HMAC outputs are reproducible without real ECDH material.
 
 ### 03.5.1 Mixed-case + whitespace stress
 
@@ -93,6 +93,8 @@ normalized       = "auth message signature"
 key_id_kept      = " AbC123 "    // verbatim, including spaces and case
 invoice          = "2-auth message signature- AbC123 "
                    // single-hyphen delimiters; key_id whitespace preserved
+shared_secret    = 0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798  (G compressed; test-only)
+hmac_offset      = 0x52ca69e463fa1b2abeabc7be3739aa45cd591f816fb003bb315ac487b23bdf91
 ```
 
 ### 03.5.2 Unicode stress
@@ -102,6 +104,8 @@ security_level   = 2
 protocol_id      = "Café Société"          // U+00E9, NFC normalized as input
 key_id           = "Δοκιμή"                  // Greek
 invoice          = "2-café société-Δοκιμή"
+shared_secret    = 0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798  (G compressed; test-only)
+hmac_offset      = 0x96e3b61c87f0efb6ce423e1c75b7bba1d08d42d8b28eff6eb678c36bd99d8c2d
 ```
 
 Implementations MUST process the inputs without renormalizing Unicode. Lowercase folding follows Unicode standard rules but no NFC/NFD normalization is applied beyond what the input already is.
@@ -114,6 +118,8 @@ protocol_id      = "test"
 key_id           = ""
 invoice          = "2-test-"
                    // trailing hyphen + empty key_id; legal
+shared_secret    = 0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798  (G compressed; test-only)
+hmac_offset      = 0x8217f17c6c5acd60aa597c0cc310981bd37071c4dc90e32937f298fd77c9fdb7
 ```
 
 ## 03.6 Counterparty cases

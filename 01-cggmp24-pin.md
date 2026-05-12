@@ -21,7 +21,7 @@ The pin MUST include patches for both:
 - **CVE-2025-66016** — missing zero-knowledge proof check in cggmp24 signing path. Pre-patch versions are vulnerable to malicious peer constructions.
 - **CVE-2025-66017** — presignature forgery via altered presig field. Pre-patch versions allow a malicious party to substitute presigs.
 
-Source: GHSA-8frv-q972-9rq5 (LFDT-Lockness/cggmp21 security advisory, 2025).
+Source: [GHSA-m95p-425x-x889](https://github.com/LFDT-Lockness/cggmp21/security/advisories/GHSA-m95p-425x-x889) (CVE-2025-66016) and [GHSA-8frv-q972-9rq5](https://github.com/LFDT-Lockness/cggmp21/security/advisories/GHSA-8frv-q972-9rq5) (CVE-2025-66017) — both are LFDT-Lockness/cggmp21 security advisories from late 2025.
 
 **A release build MUST NOT depend on cggmp24 < 0.7.0-alpha.2.** CI of both implementations SHOULD enforce this via `cargo deny` rule.
 

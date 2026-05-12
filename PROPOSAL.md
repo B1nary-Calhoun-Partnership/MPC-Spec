@@ -20,7 +20,7 @@ The product thesis is a **marketplace of replaceable Notaries** with on-chain ca
 
 ### 1. 🚨 P0 SECURITY: CGGMP'21/24 had two CVEs in late 2025
 
-Both implementations must pin to LFDT-Lockness `cggmp21` `cggmp24/m` ≥ 0.7.0-alpha.2 (post-CVE-2025-66016 missing-ZK-check + CVE-2025-66017 presig-forgery — see [GHSA-8frv-q972-9rq5](https://github.com/LFDT-Lockness/cggmp21/security/advisories/GHSA-8frv-q972-9rq5)). Calhoun's `cggmp21-fork#brc42-additive-shift` rebases on top of the patched commit. **No mainnet ceremony before this lands on both sides.**
+Both implementations must pin to LFDT-Lockness `cggmp21` `cggmp24/m` ≥ 0.7.0-alpha.2 — patches CVE-2025-66016 ([GHSA-m95p-425x-x889](https://github.com/LFDT-Lockness/cggmp21/security/advisories/GHSA-m95p-425x-x889), missing ZK proof check) and CVE-2025-66017 ([GHSA-8frv-q972-9rq5](https://github.com/LFDT-Lockness/cggmp21/security/advisories/GHSA-8frv-q972-9rq5), presignature forgery). Calhoun's `cggmp21-fork#brc42-additive-shift` rebases on top of the patched commit. **No mainnet ceremony before this lands on both sides.**
 
 ADR: [`decisions/0001-cggmp24-pin-past-cve-2025.md`](decisions/0001-cggmp24-pin-past-cve-2025.md)
 

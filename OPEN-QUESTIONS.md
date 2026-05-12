@@ -13,7 +13,7 @@ Status legend:
 
 **Question:** Will Binary pin `rust-mpc` to LFDT-Lockness `cggmp24/m` ≥ 0.7.0-alpha.2 (post-CVE-2025-66016 + post-CVE-2025-66017) before any joint mainnet ceremony?
 
-**Context:** CGGMP'21/24 had two CVEs disclosed in late 2025 ([GHSA-8frv-q972-9rq5](https://github.com/LFDT-Lockness/cggmp21/security/advisories/GHSA-8frv-q972-9rq5)): missing ZK proof check, presignature forgery. Both implementations must pin past these.
+**Context:** CGGMP'21/24 had two CVEs disclosed in late 2025: [GHSA-m95p-425x-x889](https://github.com/LFDT-Lockness/cggmp21/security/advisories/GHSA-m95p-425x-x889) (CVE-2025-66016, missing ZK proof check) and [GHSA-8frv-q972-9rq5](https://github.com/LFDT-Lockness/cggmp21/security/advisories/GHSA-8frv-q972-9rq5) (CVE-2025-66017, presignature forgery via altered presigs). Both implementations must pin past these.
 
 **Recommended resolution:** Yes. Both repos pin same commit. Calhoun's fork rebased on top.
 

@@ -125,7 +125,7 @@ The protocol choice constrains four other layers:
 - TSSHOCK BlackHat'23 paper
 - Verichains TSSHOCK page
 - LFDT-Lockness cggmp21 repo
-- GHSA-8frv-q972-9rq5 (CVE-2025-66016 + CVE-2025-66017)
+- GHSA-m95p-425x-x889 (CVE-2025-66016) and GHSA-8frv-q972-9rq5 (CVE-2025-66017)
 - Coinbase cb-mpc release blog
 - Trail of Bits review of Silence Labs DKLs23
 - silence-laboratories/dkls23

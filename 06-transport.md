@@ -48,12 +48,12 @@ The reservation of QUIC/iroh as the post-DKG accelerator is an OPTIONAL implemen
 
 Each cosigner SHALL publish in its CHIP token (§12) a `transport.inbox_url` and zero or more `transport.inbox_url_fallback`. A coordinator routing to that cosigner MUST attempt the primary URL first, then each fallback in order.
 
-Cosigners MAY pin different MessageBox operators (e.g., `<binary-messagebox-host-tbd>`, `<calhoun-messagebox-deploy-tbd>`); the protocol does not require any single relay to be reachable by all parties simultaneously, only that each party's chosen relay is reachable by *every other party*.
+Cosigners MAY pin different MessageBox operators (e.g., `rust-message-box.dev-a3e.workers.dev`, `<binary-messagebox-host-tbd>`); the protocol does not require any single relay to be reachable by all parties simultaneously, only that each party's chosen relay is reachable by *every other party*.
 
 Both production relays MUST support the WebSocket receive transport (Socket.IO/EngineIO compatible) for v1 conformance:
 
-- **`<binary-messagebox-host-tbd>`** (Binary): currently supports WebSocket. No change required.
-- **`<calhoun-messagebox-deploy-tbd>`** (Calhoun): currently HTTP-only (v2 scope). Calhoun extends with Socket.IO over CF Worker Durable Objects in Phase 1 to restore parity. Reverses the prior v2 scope decision; ADR-0006 records the design change.
+- **`<binary-messagebox-host-tbd>`** (Binary): supports WebSocket. No change required.
+- **`rust-message-box.dev-a3e.workers.dev`** (Calhoun, repo: [`Calhooon/bsv-messagebox-cloudflare`](https://github.com/Calhooon/bsv-messagebox-cloudflare)): supports WebSocket via the `/ws` endpoint on a per-identity hibernatable `MessageHub` Cloudflare Durable Object. Event surface is byte-compatible with `@bsv/authsocket`. WebSocket parity + Socket.IO compatibility over BRC-103 mutual auth shipped in v0.2.0 (M9 / M10 #61 / M11; merge `278cf07`). See [ADR-0006](decisions/0006-federated-messagebox-with-websocket.md).
 
 ## 06.8 Discovery and bootstrap
 

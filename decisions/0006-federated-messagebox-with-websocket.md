@@ -1,8 +1,25 @@
 # ADR-0006: Federated MessageBox with WebSocket as canonical receive transport
 
-**Status:** Proposed
+**Status:** Proposed (binding agreement pending Binary sign-off; Calhoun-side implementation shipped 2026-05-12)
 **Date:** 2026-05-10
+**Last updated:** 2026-05-12
 **Stewards:** John Calhoun (Calhoun), TBD (Binary)
+
+## Calhoun-side implementation status
+
+As of 2026-05-12, the Calhoun-side WebSocket extension is **shipped** in [`Calhooon/bsv-messagebox-cloudflare`](https://github.com/Calhooon/bsv-messagebox-cloudflare) v0.2.0 (merge commit `278cf07`):
+
+- **M9** — WebSocket parity (raw WS on `/ws` endpoint, per-identity hibernatable `MessageHub` Durable Object, event names + payloads byte-compatible with `@bsv/authsocket`).
+- **M10 #61** — Socket.IO compatibility layer over BRC-103 mutual auth, cross-DO event routing, unmodified `@bsv/message-box-client` working end-to-end.
+- **M11** — Worker-side Socket.IO polling fallback, 100% headline pass rate.
+- 46/46 e2e parity tests passing against `<binary-messagebox-host-tbd>` reference.
+- Deployed at `https://rust-message-box.dev-a3e.workers.dev`.
+
+The Calhoun-side scope-reversal described below is implemented; ADR remains Proposed until Binary co-signs the federation design itself.
+
+## Binary-side implementation status
+
+Unchanged. Binary's deployed MessageBox already supports WebSocket via its parent Node.js implementation. `rust-mpc` continues to consume it via the existing `bsv-messagebox-client` crate.
 
 ## Context
 

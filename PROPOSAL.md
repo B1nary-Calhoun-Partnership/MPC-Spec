@@ -24,17 +24,23 @@ Both implementations must pin to LFDT-Lockness `cggmp21` `cggmp24/m` ≥ 0.7.0-a
 
 ADR: [`decisions/0001-cggmp24-pin-past-cve-2025.md`](decisions/0001-cggmp24-pin-past-cve-2025.md)
 
-### 2. The economic moat is real and quantifiable — 3-4 OOM cheaper than Fireblocks
+### 2. The economic moat is real and quantifiable — but scenario-conditional
 
-| Provider | Per-sig cost (USD) |
+The headline `$0.0002/sig` (333 sats × 3 nodes at $50/BSV) is the **marginal BSV fee only**. Fully-loaded per-sig cost (with cosigner compute, MessageBox transport, audit infra, supply-chain, IR staffing amortized) is scenario-conditional. See §15.9.2 for the full table; abbreviated here:
+
+| Provider | Per-sig cost (USD) — marginal |
 |---|---|
 | Fireblocks Essentials | ~$0.10–$2.00 effective ($699/mo + 0.20% overage on outbound) |
 | Fireblocks Custom | $1,500/mo+ amortized |
 | Coinbase CDP MPC | bundled-into-Base lock-in |
 | Lit Protocol PKP | ~$0.001–0.01 (RPS-reserved capacity credits) |
-| **This network** | **~$0.0002** (333 sats × 3 nodes at $50/BSV) |
+| **This network — marginal BSV fee only** | **~$0.0002** (333 sats × 3 nodes at $50/BSV) |
+| **This network — fully-loaded at high volume (≥1M sigs/mo)** | **~$0.0003** |
+| **This network — fully-loaded at low volume (cold-storage, ~4 sigs/mo)** | **$5–$15** (fixed-dominated) |
 
-Structural, not a price war. Fireblocks can't lower their price 4 OOM without giving up their compliance product.
+**The moat is 3-4 OOM cheaper than Fireblocks at sustained ≥1M sigs/mo aggregate volume.** The ratio narrows to 1-2 OOM at low volume / regulated tiers, and can invert below ~50 sigs/mo self-hosted where fixed cost dominates marginal BSV fee. See [ADR-0036](decisions/0036-cost-claim-conditional-scoping.md) for full per-scenario analysis.
+
+Structural for the high-volume case, not a price war. Fireblocks can't lower their price 4 OOM without giving up their compliance product. They DO beat us at low-volume regulated tiers, structurally, because their flat fee amortizes ops cost the user would otherwise eat. The "scenarios" framing is honest about both.
 
 ### 3. Quorum-profile reconfiguration via resharing is uniquely BSV-MPC
 

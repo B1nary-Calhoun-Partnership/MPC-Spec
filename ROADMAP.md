@@ -34,7 +34,7 @@ Targets: the partnership's 2-week cross-impl test (1 bsv-mpc party + 2 rust-mpc 
 | §03 | BRC-42 invoice | Canonical canonicalization (`.to_lowercase().trim()`) + validation rules + test vectors | — |
 | §04 | SessionId | Deterministic input-hash formula | — |
 | §05 | MessageEnvelope | Canonical CBOR + BRC-78 + BRC-31 + ExecutionId binding + `traceparent` | — |
-| §06 | Transport | Federated MessageBox + WebSocket canonical + HTTP poll + FCM | Iroh QUIC direct-P2P accelerator (§06.6) → **v2**; Tor v3 onion (§06.9) → **v2** |
+| §06 | Transport + presig lifecycle | Federated MessageBox + WebSocket canonical + HTTP poll + FCM + presig lifecycle (§06.15-§06.20, per ADR-0030) | Iroh QUIC direct-P2P accelerator (§06.6) → **v2**; Tor v3 onion (§06.9) → **v2** |
 | §07 | BRC-31 auth | Per-message mutual auth, identity-key derivation | — |
 | §08 | Identity (BRC-52⊕) | Basic profile with `notAfter` + `policy_hash` + `ctlog_proof` + `audit_identity` | Threshold-subject (nested MPC) → **v2**; full cross-signing federation → **v2** |
 | §09 | Policy engine | Protocol whitelist + amount cap + per-hour rate + `min_fee_sats` + manifest format | Jurisdiction rules, k-of-m approval quorum, time-of-day windows, cumulative daily caps, dry-run mode → **v2** |
@@ -48,9 +48,31 @@ Targets: the partnership's 2-week cross-impl test (1 bsv-mpc party + 2 rust-mpc 
 | §17 | Supply chain | Reproducible Cargo + cosign + Rekor + runtime self-verification | SLSA L3 attestations → **v2**; TEE attestation cross-check → **v2** |
 | §18 | Recovery | Threshold resharing (POC 13) + encrypted backup via passkey | Social recovery (k-of-n trustees), jurisdictional escrow, nested-MPC social recovery → **v2** |
 
+## v1.5 — Notary MVP launch (between M1 demo and v2)
+
+Targets: launching the Notary MVP (per M2 milestone 2026-06-12) and the operational scaffolding for institutional-onboarding readiness.
+
+| Item | Why | Owner |
+|---|---|---|
+| Implement ADRs 0031-0034 (UI/UX contracts) | Sign-confirmation, manifest UX, recovery health, state visibility | Calhoun + Binary |
+| Implement ADRs 0038-0040 + 0045-0047 (Security correctness) | Argon2id KDF, multi-source STH, runtime self-attest + mapped-memory + caching | Calhoun + Binary |
+| Stand up HackerOne managed VDP | Per ADR-0036 + §17.15.1 obligations | Calhoun + Binary joint |
+| Establish quarterly CISO rotation (per §16.16) | Operational maturity | Calhoun + Binary |
+| Engage Trail of Bits for joint pen-test | Per CHANGES-PROPOSED #10 | Calhoun + Binary joint |
+| Stand up retained external CISO advisor | Per §16.16.2 | Calhoun + Binary joint |
+| Conformance vectors: hand-author remaining 4 TBD CBOR-diff vectors | Per loop-3 follow-on | Calhoun |
+| Reference rust-mpc run to byte-lock 06-presig-bundle-encryption.json ciphertext | Per loop-3 follow-on | Ishaan |
+| Public security.txt at both operators' domains | Per §17.15.4 | Calhoun + Binary |
+
 ## v2 — Hardening + product expansion
 
 Targets: institutional-tier signing, federated multi-operator network, multi-tier Notary product, hardware attestation, SLSA L3 supply chain.
+
+**v2 additions per 2026-05-13 swarm:**
+- SOC2 Type II audit pursuit with Schellman (kickoff in v1.5; observation post-MVP; report mid-2027)
+- Add Immunefi bug-bounty (~$100k/yr budget) for crypto-specialist findings
+- TEE attestation reopens (per ADR-0016 trigger conditions)
+- Pro tier marketplace beta (per ADR-0048)
 
 | Pulled forward to v2 | Rationale |
 |---|---|
@@ -94,6 +116,28 @@ Versioning decisions are recorded in ADRs:
 | ADR-0016 | TEE/HSM deferred from v1 to v2 (cost-driven) |
 | ADR-0019 | STH publication via PushDrop chain (v1) |
 | ADR-0020 | This versioning policy itself |
+| ADR-0030 | Presignature lifecycle — cosigner-encrypted at coordinator with burn-rate regen + mandatory invalidation (v1) |
+| ADR-0031 | Sign-time confirmation display contract (v1.5) |
+| ADR-0032 | Approval-quorum `request_view_hash` binding + UX/delivery (v1 / M1) |
+| ADR-0033 | Discovery result display contract (v1.5) |
+| ADR-0034 | State-visibility UX contract — manifest diff + presig fall-off + recovery health (v1.5) |
+| ADR-0035 | SDK v1.1 — add `listSignedActions` + `approve` (v1.5) |
+| ADR-0036 | Cost-claim conditional scoping + institutional-disclosure obligation (v1 / M1, docs-only) |
+| ADR-0037 | Canonical CBOR re-encode equivalence as wire-conformance requirement (v1 / M1) |
+| ADR-0038 | Memory-hard recovery KDF + rate-limited online unwrap + escrow audit (v1.5) |
+| ADR-0039 | Verifier-side STH multi-source cross-check + 60s witness cadence (v1.5) |
+| ADR-0040 | Continuous runtime self-attestation + library allowlist (v1.5) |
+| ADR-0041 | Network-profile-conditioned latency budgets + Paillier pool + WS pre-warm (v1 budget edit / v1.5 impl) |
+| ADR-0042 | IR taxonomy + IR-003..IR-008 + retention + vendor matrix (v1 / M1 markdown; v2 retention storage) |
+| ADR-0043 | Post-quantum migration roadmap (v3 reserved) |
+| ADR-0044 | Wallet-renderer canonicalization for `rendered_text` across intent types (v1 / M1; unblocks ADR-0032) |
+| ADR-0045 | Mapped-memory binary measurement (v1.5; correctness fix for ADR-0040 threat model) |
+| ADR-0046 | Rekor caching budget + transient-failure distinction (v1.5; companion to ADR-0040) |
+| ADR-0047 | Jittered timer cadence + per-peer rate-limit on STH-pull (v1.5; closes DoS amplification) |
+| ADR-0048 | Pro tier min-fee floor + subset-aware pool sizing (v2; forward-prep for marketplace) |
+| ADR-0049 | Out-of-band cert revocation for IR-005 chicken-and-egg (v1.5) |
+
+**Phase 0 sign-off (slipped 2026-05-22 → 2026-06-12 per 2026-05-13 swarm)** now includes ADRs 0001-0006 + **0032 + 0037** (wire-compat-affecting additions from the 2026-05-13 swarm).
 
 ## See also
 

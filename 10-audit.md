@@ -151,8 +151,9 @@ Verifiers follow the chain through the rotation by checking both signatures. The
 
 Given `(joint_pubkey, sighash)`, a verifier:
 
+0. **(NEW per ADR-0039)** Fetch the cosigner's latest STH tip from **at least two independent BRC-22 lookup hosts** AND cross-check against any STH the verifier itself has directly witnessed in the prior 5 minutes. Disagreement among sources MUST raise an `audit-anomaly` event and the verifier MUST refuse signature acceptance until reconciled (via additional independent lookups, direct cosigner-to-cosigner exchange per §10.6, or operator escalation). This closes the eclipse vector where a single BRC-22 host serves a stale-but-validly-signed tip.
 1. Look up the cosigner's BRC-52⊕ cert to find their `audit_identity` field.
-2. Find the cosigner's **latest unspent STH PushDrop** at `tm_mpc_audit` for that audit identity. This is a single UTXO lookup.
+2. Find the cosigner's **latest unspent STH PushDrop** at `tm_mpc_audit` for that audit identity. This is a single UTXO lookup *per source* (multi-source per step 0).
 3. Walk the chain backward via transaction inputs until reaching the genesis tx.
 4. At each step, verify: monotonic `tree_size`, BRC-77 signature validity, audit identity continuity (with rotation-ceremony exceptions allowed per §10.5.6).
 5. For a specific `AuditEntry`, fetch the Merkle inclusion proof from the cosigner's local Rekor log and verify against the appropriate STH on the chain.
@@ -178,7 +179,7 @@ This is the cross-cosigner cross-check that gives non-repudiation in the asymmet
 
 **Why this matters:** if cosigner #2 retroactively rewrites their own audit log to remove a signing event, the next time #2 participates in a ceremony with #3, #3 demands the current STH. If #2's tree_size is now smaller than what #3 has previously witnessed, #3 detects the rewrite. The cosigner that has been actively rewriting cannot continue to participate in ceremonies with witnessing peers without detection.
 
-**Witness-cosign cadence:** at minimum, on every signing ceremony. Implementations MAY witness more frequently (e.g., on a 60s schedule even without active ceremonies). Lapses in witness-cosigning are themselves audit events.
+**Witness-cosign cadence (per ADR-0039, proposed):** Cosigners MUST exchange STHs on a **60-second schedule independent of ceremony activity**, in addition to per-ceremony exchanges. The unconditional cadence ensures that a verifier-side eclipse (per §10.5.7 step 0) remains detectable from the cosigner side even during low-ceremony periods. Lapses in witness-cosigning are themselves audit events.
 
 ## 10.7 BRC-18 participation proofs
 
@@ -236,6 +237,45 @@ Bytes match → compliance verified. Replay without re-ceremony.
 - bsv-mpc has 3-way OP_RETURN prefix conflict: draft (`mpc-signing-proof`), core (`bsv-mpc-participation`), overlay (`mpc-proof`). Spec locks `"mpc-proof"`. Update all three call sites.
 - rust-mpc has audit logging in `crates/policy/src/audit.rs`. Required: extend to emit Merkle log + STH publication.
 - Witness-cosigning is new functionality in both implementations. Coordinate the wire format in §10.6 before implementing.
+
+## 10.12 Audit retrieval API (normative, per ADR-0042 Part F)
+
+Every cosigner participating in a multi-party deployment MUST expose:
+
+```
+GET /audit/entry/{leaf_index}
+```
+
+Response within **5 seconds p99** (per §16.3 SLI `audit.retrieval_latency_p99 ≤ 5s`). Body:
+
+```json
+{
+  "leaf_index": 42,
+  "audit_entry": { ... §10.4 AuditEntry CBOR-decoded ... },
+  "inclusion_proof": ["sha256-hex", "sha256-hex", ...],
+  "sth_chain_pointer": {
+    "audit_identity": "0x02abcd...",
+    "utxo_outpoint": "txid:vout",
+    "tree_size_at_inclusion": 4096
+  },
+  "retrieved_at": 1730000000
+}
+```
+
+### 10.12.1 Tombstoned leaves (GDPR Art.17 compatibility per ADR-0042 Part C)
+
+When a leaf has been tombstoned for right-to-erasure (per §16.14):
+
+- The `audit_entry` field is replaced with `{"tombstone": true, "tombstoned_at": <unix_ts>, "leaf_hash": "sha256-hex-of-original-leaf"}`
+- The `inclusion_proof` field is unchanged (the Merkle root is preserved by design)
+- The `sth_chain_pointer` is unchanged
+- Verifiers MUST treat `tombstone: true` as a valid leaf for inclusion-proof verification (the leaf hash is still in the Merkle tree); the leaf content is just not retrievable
+
+This resolves the F-vs-C contradiction surfaced by Quality loop-2: audit-chain integrity is preserved (tombstone leaf is still in the tree); customer data erasure is satisfied (preimage is gone); retrieval API returns a structured "this was tombstoned" response rather than an error.
+
+### 10.12.2 Authentication
+
+The endpoint MUST require BRC-31 mutual auth (§07). Audit entries are NOT public-by-default; access is gated by operator policy (some operators may make `tm_mpc_audit` STH chain entries publicly queryable; the leaf-level `audit_entry` body is gated).
 
 ## 10.11 Test vectors
 

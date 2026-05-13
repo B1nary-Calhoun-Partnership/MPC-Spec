@@ -64,6 +64,20 @@ On startup, each cosigner MUST:
 
 Failure to verify MUST cause the cosigner to refuse to start (fail-closed). Logs a clear error and exits non-zero.
 
+**(NEW per ADR-0040, proposed)** Beyond startup, re-verification MUST run **at least once every 15 minutes** AND immediately before any presig consumption that crosses a configurable burn threshold (default: every 1000 sigs or every share-refresh window, whichever first). Re-verify failure MUST trip presig invalidation per §06.18 and MUST cause the cosigner to refuse further presig consumption until re-verify passes. Each re-verify event (success or failure) MUST emit an `AuditEntry` with `event_kind = "BinaryReverified"` (success) or `"BinaryReverifyFailed"` (failure).
+
+**Rationale.** §17.6 startup verification alone leaves a runtime gap: between startup and presig consumption, a memory-corruption exploit (eBPF, dlopen, ptrace, container-escape, supply-chain compromise of a transitively-loaded shared library not covered by `binary_hash`) can inject a malicious `set_additive_shift` value (§01.2.2), causing every subsequent signature to commit to attacker-chosen BRC-42 offsets while audit/BRC-18 records remain superficially valid. The 15-minute cadence + presig-burn-trigger closes this gap. See [ADR-0040](decisions/0040-continuous-runtime-self-attestation.md).
+
+### 17.6.1 Library allowlist (NEW per ADR-0040)
+
+The build attestation's `materials` list enumerates every static dependency. Implementations MUST:
+
+- Forbid loading any shared library not enumerated in `materials`.
+- SHOULD ship with `-static-pie` or equivalent (musl-static, fully-statically-linked Rust binaries) to minimize dlopen attack surface.
+- WHERE dynamic linking is unavoidable, MUST gate via seccomp / landlock policies that block late `dlopen` (`mmap PROT_EXEC` of files not in the allowlist).
+
+This complements §17.6 — a re-verify cycle catches an exploit that survives the boot-time check; the library allowlist catches an exploit that introduces unauthorized code at runtime via `dlopen`.
+
 ## 17.7 TEE attestation cross-check (v2 reserved)
 
 **Not applicable in v1.** v1 ships without TEE per §16.1 — cost-benefit doesn't justify it.
@@ -113,6 +127,74 @@ If a vulnerability is later disclosed in version `X`, every signature produced b
 - rust-mpc has Docker matrix builds + GHCR push. Extend to add cosign + Rekor + SLSA attestation.
 - bsv-messagebox-cloudflare has manual quality gates per CLAUDE.md. Add CI + Sigstore.
 - Both implementations MUST commit `Cargo.lock` and ensure `cargo --locked` is used in CI.
+
+## 17.15 Vulnerability disclosure program + bug bounty (normative, per CHANGES-PROPOSED #11)
+
+### 17.15.1 v1.5 launch — HackerOne managed program
+
+Calhoun and Binary jointly fund a HackerOne managed program for v1.5 (post-Notary-MVP launch). Scope:
+
+- bsv-mpc (Calhoun stack) + rust-mpc (Binary stack) source code
+- bsv-rs + bsv-sdk + bsv-wallet-toolbox + bsv-wallet-toolbox-rs (per-stack SDKs)
+- rust-message-box CF Worker (Calhoun) + Binary's Railway-hosted message-box server
+- MPC-Spec itself (cryptographic-correctness findings on spec text)
+
+Out of scope: third-party dependencies (Sigstore Rekor, CF Workers infrastructure, cggmp24 upstream — those have their own VDPs).
+
+**Annual bounty budget:** ~$50,000 (split 50/50 between Calhoun and Binary).
+
+**Severity buckets:**
+- Critical (key extraction, forged signature on mainnet, audit-chain rewrite): $10k-25k
+- High (privilege escalation, IR-class bypass): $2k-8k
+- Medium (denial-of-service amplification, parser-diff with exploit path): $500-2k
+- Low (informational, hardening recommendations): $100-500
+
+Researchers contact: security disclosure at hackerone.com/calhoun-binary-partnership (handle TBD). 90-day coordinated disclosure window per ISO/IEC 30111 + 29147.
+
+### 17.15.2 v2 expansion — Immunefi (crypto-specialist bounty)
+
+Starting v2, also list on Immunefi to attract crypto-specialist researchers with bigger per-finding bounties.
+
+**Annual bounty budget v2:** ~$100,000 (Immunefi-side).
+
+**Severity buckets:** higher than HackerOne, reflecting crypto market norms — Critical findings up to $100k each.
+
+Researchers submit either platform; per-finding researcher chooses (no double-payout). Operator triages on either.
+
+### 17.15.3 Security disclosure obligations
+
+Each operator's customer-onboarding docs (per §16.1.1) MUST include:
+- VDP contact information (HackerOne + Immunefi handles)
+- Coordinated disclosure timeline expectation (90 days standard)
+- Post-resolution publication policy (CVE assignment via MITRE or Sigstore-numbering; public advisory)
+
+### 17.15.4 security.txt
+
+Both operators MUST publish a `/.well-known/security.txt` (RFC 9116) at their public-facing endpoints (Notary URLs, message-box hostnames, public-facing wallets). The security.txt MUST include:
+- VDP contact
+- Encryption (PGP key fingerprint OR alternative secure-channel)
+- Acknowledgments URL (list of past contributors)
+- Preferred-Languages
+- Canonical URL
+
+## 17.14 Vendor / single-point-of-failure matrix (NEW per ADR-0042)
+
+The v1 stack chains several external trust anchors. Each is enumerated below with its in-scope failure mode and the mitigation owner. Institutional-onboarding diligence (per §16.1.1) requires the operator to maintain a current copy of this matrix as part of their customer-facing security documentation.
+
+| Trust anchor | Role | Failure mode | Mitigation owner | Diversification status |
+|---|---|---|---|---|
+| **Cloudflare Workers / Durable Objects** | rust-message-box relay host (Calhoun stack); some Notary hosts | DO eviction; Worker quota DoS; CF outage | Calhoun operator | **SPOF**: v2 adds second-vendor MessageBox (Fly.io / Railway / self-host). §06.7 federation already supports. |
+| **Railway** | Binary message-box server host | Railway outage; container migration | Binary operator (Ishaan) | **SPOF** for Binary stack. Federated to CF via §06.7 partial mitigation. |
+| **Sigstore Fulcio** | Short-lived signing cert issuance | Fulcio root key compromise; Fulcio service outage during a release | Calhoun + Ishaan (both consume) | **External SPOF** — Sigstore trust root. Mitigation: pinned root key set; Rekor inclusion proofs detect post-hoc rewrites. |
+| **Sigstore Rekor** | Transparency log of build attestations | Rekor data loss; Rekor SLA breach | Sigstore project | **External SPOF**. Mitigation: §17.10 BRC-18 audit binding re-anchors `binary_hash` on BSV chain. |
+| **GitHub Actions / GitHub OIDC** | CI build provenance + OIDC identity for Sigstore signing | GitHub outage; OIDC token compromise; account takeover | Calhoun + Ishaan (both rely on) | **External SPOF**. Mitigation: pinned action SHA, branch protection, mandatory 2FA, secrets-rotation cadence. |
+| **`cggmp24` LFDT-Lockness upstream** | Threshold ECDSA library | Upstream maintainer absconds; subtle CVE not disclosed | Calhoun (fork maintainer; PR #200 upstreaming `set_additive_shift`) | **Critical dependency**. Mitigation: partnership fork at `cggmp21-fork`; reviewable diff (1 commit on upstream). |
+| **BSV miners** | `tm_mpc_audit` PushDrop chain confirmations + `tm_mpc_revocations` | Miner censorship of audit PushDrops; reorg of audit chain | Implicit (miners) | **Decentralization-dependent**. Mitigation: §10.5.7 step 0 multi-source STH cross-check; reorg-tolerance bounded by 6-conf. |
+| **Iroh / n0-computer** | Optional v2 QUIC direct-P2P (§06.6); NOT v1 | n0 abandons project; protocol-level vulnerabilities | Both operators (v2 only) | **v2 risk**. Q6 OPEN-QUESTIONS reserves WebTransport / libp2p substitute. |
+| **`bsv-rs` (Calhoun's BSV SDK)** | Calhoun stack BSV primitives | Calhoun absconds; supply-chain attack on crates.io publish | Calhoun | **Partnership-internal SPOF**. Mitigation: Mitch maintains independent `bsv-sdk` stack; conformance vectors enforce wire-compat (#S3 in action items). |
+| **`bsv-sdk` (Binary's BSV SDK)** | Binary stack BSV primitives | Mirror of `bsv-rs` risk on Binary side | Ishaan | **Partnership-internal SPOF**. Same mitigation. |
+
+**Pen-test starting points (per §17.14 vendor matrix):** A Mandiant / NCC Group / Trail of Bits engagement would prioritize: (a) MessageBox relay BRC-31 auth path (§06), (b) un-stubbed `proofs.rs::publish_proof / query_proofs` calls (§10.10), (c) cert-chain parser at federation boundary (§13.7), (d) presig coordinator ciphertext-replay surface (ADR-0030 §06.17.3 single-use enforcement), (e) OTel redaction linter scope (§16.4 — does it cover all log sinks or only spans?), (f) `set_additive_shift` injection point (§01.2.2; ADR-0040 continuous re-attestation mitigates).
 
 ## 17.13 Test vectors
 

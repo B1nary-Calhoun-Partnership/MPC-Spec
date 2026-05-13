@@ -117,6 +117,26 @@ Total removal time: max 24h (TTL bound).
 - bsv-mpc has no certifier today. For Calhoun side, decision pending: stand up a certifier in bsv-mpc, or use rust-mpc's certifier with a Calhoun-controlled root key. Latter is faster; spec is agnostic.
 - Both implementations MUST support reading the shared `tm_mpc_certs_v1` log and accepting certs from any root.
 
+## 13.15 Operator-bridge incident-coordination contract (normative, per ADR-0042 Part G)
+
+For each IR class in §16.5.3-§16.5.8, the partnership defines a RACI matrix (Responsible / Accountable / Consulted / Informed). The partnership-baseline RACI:
+
+| IR class | Calhoun side (John) | Binary side (Mitch / Ishaan) | External |
+|---|---|---|---|
+| IR-002 Suspected-cosigner-compromise (own) | R | I | — |
+| IR-002 (peer's) | C | R (their cosigner) | — |
+| IR-003 Coordinator-compromise (own) | R | I | — |
+| IR-003 (peer's) | C | R | — |
+| IR-004 MessageBox / relay compromise (rust-message-box, Calhoun-operated) | R | I | — |
+| IR-004 (Binary message-box server) | I | R | — |
+| IR-005 Certifier-key compromise (cross-operator) | R (Calhoun-issued) | R (Binary-issued) | A (steering committee if both compromised) |
+| IR-006 Audit-chain censorship / eclipse | C (verifier-side detection) | C (verifier-side detection) | I (BSV miner community if consensus-level) |
+| IR-007 Policy-manifest poisoning | C | C | I (approver-quorum members) |
+| IR-008 Presig-pool poisoning (own coordinator) | R | I | — |
+| IR-008 (peer's coordinator) | C | R | — |
+
+For Sev-1 incidents that cross operator boundaries (IR-005 + IR-008-with-broadcast + audit-chain rewrite proven), both sides coordinate via a **real-time async war-room thread in `#mpc-spec-ir-bridge`** within 1 hour of detection. **NOT a scheduled call** — the Slack thread is the canonical incident channel. PagerDuty/Opsgenie escalations route both sides simultaneously and post automated context into the thread; both stewards (and the retained external advisor per §16.16.2 when relevant) react in thread with action items. Status MUST be posted every 5-15 minutes as the situation develops. Resolution = PR landed (revocation / replacement / hotfix) + `AuditEntry` published + Slack postmortem thread.
+
 ## 13.14 Test vectors
 
 `conformance/test-vectors/13-federation.json`. Examples:

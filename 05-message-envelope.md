@@ -170,8 +170,29 @@ A recipient MUST reject envelopes that fail any of:
 - BRC-31 signature verification.
 - ExecutionId prefix matching the ceremony's expected ExecutionId.
 - BRC-78 decryption (e.g., wrong recipient, malformed ciphertext).
+- **Byte-equivalent re-encode check (per §05.9.1 below).**
 
 A recipient MUST log envelope rejection (with `correlation_id` if present) for forensic forensics. The recipient MUST NOT respond to the malformed envelope; the protocol-level identifiable-abort handler decides whether to attribute the failure to a specific party.
+
+### 05.9.1 Byte-equivalent re-encode requirement (parser-differential defense)
+
+**Normative (per ADR-0037, proposed):** A recipient MUST re-encode the parsed envelope (fields 1 through 8) as canonical CBOR per RFC 8949 §4.2 and verify byte-equivalence with the original bytes covered by `sender_sig_brc31` (field 9). Any mismatch MUST be treated as a signature failure and the envelope MUST be rejected.
+
+The following MUST cause rejection at the FIRST byte of deviation, without partial processing:
+
+- Non-minimal integer encoding (e.g., `0x18 0x05` for the integer 5, which must encode as `0x05`)
+- Indefinite-length strings, arrays, or maps (forbidden per §05.2)
+- Duplicate map keys
+- Trailing bytes after the canonical termination
+- Floats (forbidden per §05.2)
+- Unsorted map keys
+- Tag values not whitelisted by this spec
+
+**Rationale.** Two independent CBOR parsers (bsv-mpc / serde_cbor-flavored; rust-mpc / Binary's parser) may accept asymmetric inputs. An attacker that crafts an envelope which bsv-mpc accepts as round-N from party-A but rust-mpc rejects (or vice-versa) can steer identifiable-abort blame onto an honest party, cause split-brain audit logs, or replay bytes whose `sender_sig_brc31` covers a different parse-tree than the verifier reconstructs. Closing this gap requires byte-equivalence, not just "both parsers strict."
+
+A conformance test vector pair (one accepted, one minimally-different-rejected) is committed to [`conformance/test-vectors/05-message-envelope-diff.cbor.hex`](conformance/test-vectors/05-message-envelope-diff.cbor.hex). Both implementations MUST round-trip both vectors per the rule above.
+
+**Reference precedent:** Fireblocks BGM_DKG (2023) was a parser/transcript-binding gap of this class. Trail of Bits has published similar diff-fuzzing findings against TSS libraries. See [ADR-0037](decisions/0037-cbor-re-encode-equivalence.md).
 
 ## 05.10 Reserved fields
 

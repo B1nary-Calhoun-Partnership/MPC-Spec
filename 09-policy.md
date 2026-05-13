@@ -88,7 +88,7 @@ The policy engine MUST fire on **three hooks**, not one. Critical: rust-mpc's cu
 
 **Presigs MUST be bound to `policy_id` at generation time.** The presig's cggmp24 ExecutionId (§02) includes a 32-byte hash that incorporates `policy_id`; a presig generated under v=7 cannot be consumed under v=6.
 
-This means policy rotations invalidate the presig stockpile. Implementations SHOULD generate new presigs immediately after a policy rotation to maintain pool depth.
+This means policy rotations invalidate the presig stockpile. **The coordinator MUST delete all `PresigBundle` rows whose `policy_id` no longer matches the current manifest, per §06.18** (Mandatory invalidation). Implementations SHOULD trigger immediate regeneration after a policy rotation to maintain pool depth per §06.19.
 
 The ExecutionId formula in §02 takes `algorithm_tag` and `phase_tag`; for presigning specifically, the ExecutionId additionally hashes `policy_id` into `payload_digest_32B` of the SessionId (§04.5).
 
@@ -101,9 +101,21 @@ Verdict = "Allow"
         | { "RateLimited": { retry_after_secs: u64 } }
 ```
 
-`RequireApproval` returns a quorum spec; the coordinator MUST collect `k` approvals from `eligible` before proceeding.
+`RequireApproval` returns a quorum spec; the coordinator MUST collect `k` approvals from `eligible` before proceeding. The approval payload + UX contract is normatively defined in §09.5.1 below (added per ADR-0032).
 
 `RateLimited` is returned when a sliding-window check would exceed the cap; implementations SHOULD return the time-until-next-budget-window in `retry_after_secs`.
+
+### 09.5.1 Approval binding and delivery (normative, per ADR-0032)
+
+When `Verdict::RequireApproval` is returned, the coordinator MUST:
+
+1. **Compute `request_view_hash`** as `SHA-256(canonical_CBOR({amount_satoshis, recipient_outputs, sighash, ExecutionId, policy_id, human_locale, rendered_text}))`. The `rendered_text` field is the human-visible string the wallet displayed to the user (BRC-100 description or memo, normalized via NFC). All fields MUST be canonically CBOR-encoded per §05.2.
+2. **Deliver to approvers** via the canonical MessageEnvelope (§06) — same transport, BRC-31 auth, BRC-78 encryption. Default TTL = 300 seconds; coordinator MAY shorten via `ApprovalQuorum.deadline_secs`.
+3. **Approver signs** `BRC-77(request_view_hash || "mpc-approval-v1" || session_id)` — NOT `policy_id` alone. WebAuthn-bound approvers (per §08.11) MUST use `userVerification=required` AND MUST bind WebAuthn `clientDataJSON.challenge` to `request_view_hash`.
+4. **Coordinator collects** until `k` Allow approvals received, OR `k` Deny short-circuits, OR deadline elapses (treated as Deny by silence).
+5. **Requester sees** in real time: `{collected: k', total: k, deadline_ms_remaining, eligible_responded: [bstr33], status: "Pending"|"Approved"|"Denied"|"Expired"}`. This is the UX surface required for an `mpc.approve()` consumer (§15.4) and the requester-side `mpc.sign()` waiting state.
+
+**Rationale for `request_view_hash`:** approver-signs-`policy_id`-alone is vulnerable to LLM prompt injection (request memo paraphrased), deepfake-induced approvals (voice/video bypass), and host-UI tampering (different render than is actually signed). Binding the signature to the rendered transaction view via `request_view_hash` closes this gap. See [ADR-0032](decisions/0032-approval-quorum-request-view-hash.md).
 
 ## 09.6 Asymmetric per-cosigner enforcement
 
@@ -133,6 +145,27 @@ The manifest is signed by `approver_keys` (m-of-n) via BRC-77 signatures over `p
 Signatures MUST be over the *canonical CBOR encoding* of fields 1-10 (`approver_sigs` itself is field 11; obviously not self-referential).
 
 ## 09.9 Versioning, rollout, rollback
+
+(placeholder for §09.9 main content — see prior draft.)
+
+### 09.9a Manifest-change UX gate (normative, per ADR-0034)
+
+When `policy_id` changes for a `jointPubkey` the user transacts under, the wallet MUST surface a one-time **manifest diff** to the user BEFORE the first sign under the new manifest. The diff MUST be acknowledged (user tap) before the wallet consumes a presig from the new policy_id's pool (§06.18 invalidation deleted the prior pool atomically).
+
+Diff fields the wallet MUST surface:
+
+- Rule additions / removals / modifications
+- Approver-quorum changes (`k` shifts, `eligible` list deltas)
+- Rate-limit changes (`max_per_hour`, sliding-window caps)
+- Amount-cap changes (`max_amount_sats`)
+- Approval-required threshold shifts
+- Manifest age + signer set (m-of-n approver_keys per §09.8)
+
+Silent rollouts (consuming a presig under a new manifest without surfacing the diff) violate the "presig invalidation is real" guarantee and are non-conformant.
+
+Per ADR-0032 §09.5.1, when the wallet is in an active `RequireApproval` state at the moment of manifest rotation, the `request_view_hash` MUST be re-computed under the new manifest AND the in-flight approval requests MUST be re-issued. The previous in-flight signatures are no longer valid under the new policy_id; treating them as valid is a race-condition vulnerability identified in 2026-05-13 swarm Self-Critique.
+
+For the wallet-renderer canonicalization that produces the `rendered_text` field in `request_view_hash`, see ADR-0044 (renderer spec, M1).
 
 - `version` is monotonic. Downgrades are forbidden — verifiers reject manifests with version less than the last-seen version for the same `cosigner_identity`.
 - `effective_after_ms` allows staged rollout: a manifest published now is enforceable starting at this timestamp.

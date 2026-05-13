@@ -66,6 +66,30 @@ Recovery flow:
 4. Decrypts `share_B`.
 5. User now has 2 of 3 (their device share + restored backup); can sign.
 
+## 18.4a Recovery health indicator (normative UX, per ADR-0034)
+
+The wallet MUST expose a `recovery_health` query (callable via the wallet's BRC-100 surface; also surfacable as an always-on UI indicator) returning the following fields for all three §18 recovery paths:
+
+```
+RecoveryHealth = {
+    passkey_present: bool,                      // §18.5.1 Path 1 — encrypted backup KEK derivability
+    backup_synced_age_secs: u64,                // freshness of the user's BRC-100 wallet sync
+    trustees_reachable: { current: u8, total: u8 },  // §18.5.2 escrows / §18.6 trustees pingable
+    last_refresh_age_days: u32,                 // §16.5.1 routine refresh recency
+    overall_status: tstr,                       // "healthy" | "degraded" | "critical"
+}
+```
+
+Per-field freshness thresholds (RECOMMENDED defaults; operator may tighten):
+
+- `healthy`: passkey_present=true AND backup_synced_age_secs<3600 AND trustees_reachable.current ≥ ceil(total/2)+1 AND last_refresh_age_days<35
+- `degraded`: any one threshold breached
+- `critical`: passkey_present=false OR trustees_reachable.current<2 (recovery quorum at risk) OR last_refresh_age_days>60
+
+The wallet SHOULD surface the `overall_status` as a persistent indicator (green/yellow/red). ZenGo's "always-on recovery health" UX is the reference precedent.
+
+A `critical` status MUST trigger an in-app onboarding flow nudging the user to repair the recovery posture (re-sync backup, re-provision trustees, force refresh). Wallets that hide `critical` status from users are non-conformant.
+
 ## 18.5 Catastrophic recovery (case (c) of §16.6)
 
 **Scenario:** two of three cosigners simultaneously fail. User has share A, but B and C are both gone.
@@ -83,6 +107,19 @@ User pre-encrypts shares B and C with a recovery passphrase. Backup is at the us
 
 This is the **default** recovery path for the Default product tier (§15).
 
+**Normative parameters (per ADR-0038, proposed):**
+
+- **Memory-hard KDF.** Recovery passphrase derivation MUST use Argon2id (NOT plain HKDF / HMAC). Default parameters:
+  - `profile-server`: `m = 256 MiB, t = 3, p = 1`
+  - `profile-mobile`: `m = 64 MiB, t = 4, p = 1`
+- **Per-blob random salt.** Encrypted backup blobs MUST include a per-blob random `kdf_salt: bstr32`. Same passphrase across users / devices yields different KEKs.
+- **Online unwrap ceremony.** Backup unwrap MUST be a single online ceremony with the user's BRC-100 wallet that:
+  - Rate-limits to **≤5 attempts per UTC hour**, enforced server-side at the BRC-100 wallet (not just client-side).
+  - Emits an `AuditEntry` with `event_kind = "RecoveryAttempted"` and outcome (`"Success"` | `"InvalidPassphrase"` | `"RateLimited"`) on each attempt — successful or not.
+  - Witness-cosigns the recovery event on `tm_mpc_audit` (§10.6 pattern) before producing share plaintext.
+
+**Rationale.** Plain HKDF / HMAC + offline backup + no rate-limit = offline-grindable single-passphrase KEK. Memory-hard Argon2id makes the GPU-grind expensive; rate-limited online ceremony makes silent grinding impossible (every attempt produces an audit event the user/operator can monitor). The whole MPC threshold collapse to "user types passphrase" must not become a soft underbelly. See [ADR-0038](decisions/0038-memory-hard-recovery-kdf.md).
+
 ### 18.5.2 Path 2 — Jurisdictional escrow
 
 For high-value users, shares are pre-encrypted to *jurisdiction-distributed escrow agents*. The user must convince `m` of `n` jurisdictional escrows to release.
@@ -90,6 +127,14 @@ For high-value users, shares are pre-encrypted to *jurisdiction-distributed escr
 Example: 3-of-3 escrow split: USA escrow + EU escrow + Asia escrow. Each holds an encrypted share that decrypts only with the user's recovery passphrase + escrow's release key.
 
 This is **opt-in** for power users; not part of the Default tier.
+
+**Normative escrow obligations (per ADR-0038):**
+
+- Each escrow release MUST be a §10 audit event published to `tm_mpc_audit` BEFORE the share plaintext is produced.
+- Release request MUST be BRC-31-authenticated with a fresh per-attempt nonce signed by the user's BRC-100 wallet (defeats replay).
+- Escrows MUST refuse silent release. A release-attempt notice on `tm_mpc_audit` is a precondition for the release ceremony; absence of the notice is itself an `audit-anomaly`.
+- Escrow operators MUST individually verify caller identity (the BRC-31 sender) and MUST throttle release attempts (≤3 per UTC day per user-identity).
+- An m-of-n escrow MUST NOT enable silent collusion: any 1 honest escrow refusing release publishes an `EscrowReleaseRefused` event; m-of-n release without a corresponding `EscrowReleaseAttempted` audit chain is a detectable anomaly.
 
 ## 18.6 Nested-MPC social recovery
 
@@ -136,6 +181,7 @@ Total time bounded by user response. No on-chain transactions required for recov
 - WebAuthn PRF integration is browser/Tauri client work — not in either MPC implementation directly. Spec defines the interface.
 - BRC-100 wallet integration for encrypted backup is the wallet layer's responsibility, not MPC's.
 - Recovery passphrase derivation uses BRC-42 protocolID `[2, "mpc recovery"]` for HKDF input.
+- **Presig invalidation at refresh commit.** Every successful refresh ceremony (routine resharing per §18.2, party replacement per §18.3, threshold change per §18.4, or catastrophic recovery per §18.5) MUST trigger the presig invalidation rules in §06.18. The coordinator MUST delete all `PresigBundle` rows for the affected `joint_pubkey` atomically with the refresh commit; bundles MUST NOT be consumable across the refresh boundary. Implementations SHOULD trigger immediate burn-rate-driven regeneration (§06.19) post-refresh to restore pool depth.
 
 ## 18.10 Test vectors
 

@@ -29,6 +29,36 @@ The cryptographic invariants we have without enclave hardware are sufficient for
 
 **Forward-compat hooks are preserved.** Cert format keeps `attestation` and `binary_hash` fields as OPTIONAL (§08). Policy engine keeps `RuleKind::RequireAttestation` schema. When v2 ships, no wire changes are required.
 
+### 16.1.1 Customer-facing disclosure obligation (NEW per ADR-0036)
+
+The v1 deployment posture is explicitly **not** a regulated-custody product. Operators marketing the v1 stack to:
+- NYDFS Part 500 -licensed entities,
+- MiCA Art.75 CASP custody customers,
+- OCC trust-charter applicants,
+- Anyone subject to SOC2 Type II strict scope on the cryptographic key-material control,
+
+MUST disclose ADR-0016 deferrals (no v1 TEE, no v1 HSM cold tier) in their customer-facing security documentation BEFORE onboarding the customer. The disclosure MUST cite the v2 institutional-tier roadmap as the customer-targeted upgrade path. Operators that conceal the v1 posture in marketing materials are non-conformant.
+
+This obligation does NOT apply to operators marketing to:
+- MSB-licensed fintech treasury (signing own keys, not custodying customer keys).
+- Web2.5 self-custody products where the user accepts the v1 posture per onboarding flow.
+- AI-agent / x402 paid-signing use cases at sub-cent value transactions (§15.2.2 Express tier).
+
+The customer-onboarding doc MUST include a "shared-responsibility model" diagram per ADR-0042 §17.14 vendor matrix.
+
+## 16.1.2 Operator → profile binding (normative, per 2026-05-13 divergence-risk swarm)
+
+Each cosigner MUST advertise its profile (per §16.2 below) in the CHIP capabilities JSON as `profile: "<profile-name>"`. Once advertised, the operator MUST NOT silently flip the profile — profile change is a §09.9 policy event requiring m-of-n approver sign-off.
+
+Reference bindings:
+
+- **`bsv-mpc-worker`** (Calhoun CF Worker Notary) → `profile-edge`
+- **`bsv-mpc-service`** (Calhoun dedicated host) → `profile-server`
+- **`rust-mpc` cosigner backend** (Binary Railway-hosted) → `profile-server`
+- Cosigner-on-phone (any stack) → `profile-mobile` or `profile-mobile-constrained`
+
+CI gates: the daily drift-watch workflow asserts profile binding matches the cosigner's advertised host (via DNS + `/capabilities` declaration). Profile flips fail the build and require an ADR or m-of-n policy-update.
+
 ## 16.2 Conformance profiles
 
 The spec defines four deployment profiles. A cosigner declares its profile in CHIP token capabilities.
@@ -63,8 +93,10 @@ A Notary MUST be `profile-edge` or `profile-server` (high-availability requireme
 | `operator.cert_age` | < 90d (rotation due) | All |
 | `fee.injection_failure_rate` | ≤ 0.01% | All |
 | `recovery.drill_success_rate` | quarterly drill passes | Edge, Server |
+| `presig.warm_path_hit_rate` | ≥ 0.95 (per ADR-0041) | Edge, Server |
+| `audit.retrieval_latency_p99` | ≤ 5s (per ADR-0042 / §10.12) | All |
 
-## 16.3 SLO publication
+### 16.3.1 SLO publication
 
 Each operator MUST publish a `health.json` consumable by `compose_sla()`:
 
@@ -166,6 +198,40 @@ T+30m:  New cosigner provisioned + cross-signed.
 T+60m:  Status page green; presig pool back to depth 5+.
 ```
 
+### 16.5.3 IR-003: Coordinator compromise
+
+**STUB per ADR-0042; full text in upcoming spec PR.** Detection: coordinator state-machine anomalies (wrong-order rounds emitted, presig bundle deletions outside §06.18 triggers, audit-log writes that don't witness-cosign). Response shape: full coordinator quarantine + secondary coordinator activation + audit-anomaly publication + Sev-1 escalation. Distinguishes coordinator-as-cosigner vs coordinator-as-pure-router compromises. T+0/T+5m/T+15m/T+30m structure.
+
+### 16.5.4 IR-004: MessageBox / relay compromise
+
+**STUB per ADR-0042.** Detection: BRC-31 signature failures spiking on a single relay; envelope-loss patterns; relay return-codes inconsistent with cosigner-witnessed history; impossible-time-ordering envelopes. Response: switch to backup relay (per §06.7 federation), revoke compromised relay's CHIP token, audit-anomaly publish, customer notification. Does NOT require ceremony abort — by §06.2 layering, relay compromise can drop / reorder / observe but not forge envelopes if §05.9.1 re-encode check is implemented.
+
+### 16.5.5 IR-005: Certifier-key compromise
+
+**STUB per ADR-0042.** Detection: unauthorized BRC-52⊕ cert issuance; Sigstore Rekor-log anomaly; root-of-trust event signal. Response: revoke root cert (BRC-22 `tm_mpc_revocations`), re-issue cosigner certs under successor root, mandatory force-refresh across all cosigners under the compromised root, Sev-1 status page red. Highest impact — root-key compromise invalidates the whole trust chain. T+0/T+1h/T+24h/T+72h escalation (slower because cross-operator coordination required).
+
+### 16.5.6 IR-006: Audit-chain censorship / eclipse
+
+**STUB per ADR-0042.** Detection (per §10.5.7 step 0): multi-source STH lookup disagreement; witness-cosign failures spike; BRC-22 host returns stale tip on cross-check. Response: failover to second BRC-22 host, force witness-cosign cadence to 10s, customer notification, audit-anomaly publish. Distinguishes wide eclipse (network) vs selective (one operator). Sev-2 escalation.
+
+### 16.5.7 IR-007: Policy-manifest poisoning
+
+**STUB per ADR-0042.** Detection: PolicyManifest hash mismatch (BRC-52⊕ `policy_hash` vs locally-fetched manifest); approver-quorum signatures don't verify; rule additions that lack m-of-n approver sigs. Response: refuse-to-load on hash mismatch, fall back to prior manifest version, alert approvers via separate channel, audit-anomaly. Sev-2.
+
+### 16.5.8 IR-008: Presig-pool poisoning
+
+**STUB per ADR-0042 (newly relevant after ADR-0030).** Detection: presig consumption produces sigs that don't verify under joint pubkey; cosigner-encrypted presig blobs fail BRC-2 decrypt; coordinator's pool serves bundles bound to stale `policy_id` or `joint_pubkey`. Response: atomic pool deletion per §06.18, audit-anomaly, force-refresh of all bundles, presig regen from clean slate. Sev-1 (a single bad sig that broadcasts is unrecoverable).
+
+### 16.5.9 Sev-1/Sev-2/Sev-3/Sev-4 classification matrix
+
+**STUB per ADR-0042.** Triggers per severity:
+- **Sev-1**: key-material compromise (IR-005, IR-008-with-broadcast), quorum loss (§16.6.3), audit-chain rewrite proven.
+- **Sev-2**: single-cosigner compromise (IR-002), coordinator anomaly (IR-003), relay failure (IR-004), policy poisoning (IR-007), audit eclipse (IR-006).
+- **Sev-3**: presig-pool depth degraded, share-refresh missed deadline, OTel signal loss.
+- **Sev-4**: latency budget breach (§06.10), warm-path hit rate below SLI target, vendor-status changes (§17.14).
+
+Mapping to PagerDuty / Opsgenie severity tiers is implementation-specific; this matrix is the spec contract.
+
 ## 16.6 Disaster recovery
 
 ### 16.6.1 Case (a): One cosigner data-destroyed
@@ -240,6 +306,83 @@ Multi-operator deployments MUST share an "operator bridge" channel for IR coordi
 Required within 5 business days of any SEV-1 / SEV-2 incident. Published to BRC-22 `tm_mpc_postmortems` (digest + URL). Body lives at the operator's URL; URL hash is on-chain for tamper-evidence.
 
 Use Google SRE Workbook blameless template.
+
+## 16.14 Audit retention + legal hold (normative, per ADR-0042 Part C)
+
+### 16.14.1 Retention period
+
+- **Local Merkle leaves MUST be retained ≥5 years** to satisfy NYDFS §500.06 + MiCA Art.68 + SOC2 CC7.2 + GLBA Safeguards Rule.
+- Implementations MAY tighten (e.g., to 7 or 10 years) per per-deployment regulatory minimum.
+- The on-chain STH chain (per §10.5) is permanently retained by definition (UTXO + spend history is immutable).
+
+### 16.14.2 Legal hold
+
+- A per-customer **legal-hold flag** AND a per-record legal-hold flag MUST be supported.
+- When set, pruning of in-scope records is FROZEN regardless of the 5-year baseline.
+- Legal-hold lift MUST emit an `AuditEntry` with `event_kind = "LegalHoldLifted"`.
+
+### 16.14.3 Right-to-erasure (GDPR Art.17)
+
+- Handled via **tombstone-with-hash, NEVER leaf-deletion** — preserves Merkle root + audit-chain integrity.
+- The leaf preimage is removed; the leaf hash remains in the Merkle tree.
+- §10.12.1 specifies the retrieval API's tombstone response.
+- **PII forbidden in `request_hash` preimage** — only hashes of customer identifiers may be included in audit leaves. PII in the preimage would be permanently anchored on-chain via STH, defeating GDPR Art.17 compliance.
+
+Right-to-erasure handling is detailed in CHANGES-PROPOSED.md item 7. The hashed-not-personal-data legal posture is being pursued per Q47.
+
+## 16.15 SLA framework — composed-quorum guarantees (normative, per ADR-0042 Part D)
+
+### 16.15.1 SLO vs SLA distinction
+
+- §16.3 SLIs define **SLO** (operator targets, internal). e.g., `signing.latency.p99 ≤ 250ms`.
+- §16.15 SLAs are the **contractual customer-facing targets** for institutional-tier deployments. Tighter or looser than SLOs per contract.
+
+### 16.15.2 Joint SLA composition
+
+For multi-operator deployments (e.g., Pro tier 2-of-5 marketplace), the joint SLA is the **quorum-fault-tolerant minimum** of individual operator SLAs:
+
+```
+joint_availability = P(at_least_t_operators_meet_their_SLO)
+joint_latency_p99  = max(operator_latency_p99 over the t-quorum)
+```
+
+Implementations MAY expose this composition via a `sla.compose(operator_slos: [Slo], threshold: t)` library function (informative — not normatively required).
+
+### 16.15.3 Error-budget burn-rate alerts
+
+Operator dashboards MUST surface error-budget burn-rate alerts as a third column alongside SLI (current) and SLO (target). Burn-rate algorithm RECOMMENDED: Google SRE Workbook 2/5 (fast burn: 2% of monthly budget in 1 hour; slow burn: 5% in 6 hours).
+
+## 16.16 CISO governance (normative, per CHANGES-PROPOSED #8)
+
+Operational chief-information-security-officer (CISO) function is structured per the 2026-05-13 partnership resolution as follows.
+
+### 16.16.1 Operational CISO — quarterly rotation
+
+- Calhoun and Binary alternate the operational CISO role on a quarterly cadence.
+- The active CISO is the single point of contact for:
+  - Sev-2 and Sev-3 incidents (per §16.5.9)
+  - Vendor-risk review (per §17.14)
+  - Policy-manifest sign-off (per §09.8)
+  - Operator credential rotation cadence (per §16.8)
+  - SLA composition decisions (per §16.15)
+  - Pen-test scope (per ROADMAP v1.5)
+- Quarterly handoff is **strictly async** (per partnership operating model: no scheduled calls). Outgoing CISO writes a **handoff PR** to `MPC-Spec/governance/ciso-handoff-YYYY-Q.md` covering: (a) open incidents + status, (b) vendor-risk register state + outstanding actions, (c) pending policy-manifest reviews, (d) ADR sign-off backlog. Incoming CISO reviews the PR; approval = formal handoff. Two-week shadow period = collaborative PR review on in-flight items in `#mpc-spec-*` Slack channels (no "shadow calls"; the PR comment thread is the handoff record).
+
+### 16.16.2 External advisor — retained for Sev-1 highest-impact incidents
+
+An external security advisor is retained on a monthly retainer (~$2-4k/mo) for engagement on:
+
+- **IR-005 (Certifier-key compromise)** — root-of-trust event affects partnership-wide trust
+- **IR-008 with broadcast (Presig-pool poisoning where a bad signature broadcast to mainnet)** — unrecoverable forged signature; trust-restoration critical
+- Optional engagement for IR-001/002 (cosigner compromise) when both stewards mutually agree
+
+Advisor MUST have demonstrated MPC / threshold-signing experience (preferred: ToB / NCC / Cure53 senior consultant, or independent with comparable public track record).
+
+Advisor signs an NDA covering audit-substrate access, cert chains, and operator IR procedures. Advisor does NOT hold any cosigner share or have signing capability.
+
+### 16.16.3 Conflict-of-interest discipline
+
+The active CISO MUST recuse from decisions where their own operator's stack is the subject (e.g., post-IR-002 cosigner-compromise on Calhoun side, the active CISO is Binary even if it's a Calhoun-quarter rotation; rotation timer pauses).
 
 ## 16.13 Implementation notes
 

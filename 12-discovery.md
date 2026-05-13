@@ -87,6 +87,26 @@ results = LookupResolver(
 
 Results are PushDrop-decoded CHIP tokens with the capabilities JSON parsed.
 
+## 12.5a Discovery result display contract (normative, per ADR-0033)
+
+For every result row returned by `mpc.discover(filter)` (§15.4 SDK method), the conformant wallet MUST surface to the user:
+
+| Field | Source | Notes |
+|---|---|---|
+| `fee_sats` | capabilities JSON `signing_fee_sats` | Per-signing fee |
+| `fee_fiat_estimate` | `fee_sats × bsv_usd_rate` per Q17 oracle | Locale-aware (ISO 4217 minor units); staleness bound 300s |
+| `chip_age_days` | (now - chip_token_created_at) / 86400 | On-chain age signal |
+| `abort_rate_30d` | `mpc.aborted_30d / mpc.total_attempts_30d` | Recent abort rate |
+| `successful_settlements_30d` | Count of successful sign ceremonies in last 30d | Volume signal |
+| `jurisdiction` | Notary's declared `jurisdiction` field | E.g., "US-CA", "EU-DE", "global" |
+| `support_url` | Notary's `support_url` capability field | Operator contact |
+| `tofu_checks: [pass/fail × 7]` | Per §15.7 TOFU check results | Visible verification matrix |
+| `reputation_score` | Per §12.5 formula (0.40 proofs + 0.20 age + 0.25 abort + 0.15 fee) | Single normalized scalar 0.0-1.0 |
+
+Implementations SHOULD NOT collapse to "auto-picked." The `mpc.discover()` result MUST be a structured list, not just an opaque handle. Auto-pick (e.g., wallet picks highest reputation × cheapest) MAY be exposed as a one-tap convenience but the per-row data MUST remain accessible to the user.
+
+Operators that omit `support_url` or `jurisdiction` fields in their capabilities JSON MUST be displayed with explicit `unavailable` markers — failing to render them at all is non-conformant (creates an asymmetric trust signal).
+
 ## 12.5 Reputation scoring
 
 Discovered cosigners SHOULD be ranked by reputation. The default formula (per `bsv-mpc-overlay/src/discovery.rs`):

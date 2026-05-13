@@ -1,0 +1,15 @@
+# Build / tool output — local-only, not pushable
+graphify-out/
+
+# Editor + OS detritus
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Python venvs / caches (for conformance/scripts)
+__pycache__/
+*.py[cod]
+.venv/
+venv/

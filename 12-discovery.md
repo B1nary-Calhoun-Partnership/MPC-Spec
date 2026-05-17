@@ -14,24 +14,35 @@ Reputation-related events use `tm_mpc_audit` (§10), `tm_mpc_certs_v1` (§08), a
 
 Notary capability manifests use `tm_mpc_notary_manifest` (§15).
 
-## 12.2 CHIP token format
+## 12.2 CHIP token format (canonical signed SHIP — Path A, per [ADR-0050](decisions/0050-chip-token-architecture-path-a.md))
 
-Each cosigner publishes a 5-field PushDrop output on topic `tm_mpc_signing`:
+A cosigner's CHIP token is **byte-identical to a canonical 5-field signed SHIP admin token** as defined by `@bsv/overlay-discovery-services` (`SHIPTopicManager.ts`) and produced by `@bsv/sdk` 1.10.1's `pushdrop.lock(fields, [2, "service host interconnect"], "1", "anyone", true, true, "before")` path:
 
 ```
 PushDrop fields:
-  0: "CHIP"                      // marker (4 ASCII bytes)
-  1: identity_key_33B            // BRC-31 identity pubkey
-  2: service_url                 // UTF-8 string (full URL with scheme)
-  3: "tm_mpc_signing"            // topic (16 ASCII bytes)
-  4: capabilities_json           // canonical JSON, see §12.3
+  0: "SHIP"                    // protocol marker (4 ASCII bytes)
+  1: identity_key_33B          // BRC-31 identity pubkey (33-byte compressed secp256k1)
+  2: service_url               // UTF-8 string (full URL with scheme; e.g. "https://mpc.example.com")
+  3: "tm_mpc_signing"          // topic (16 ASCII bytes)
+  4: signature_DER             // DER ECDSA over sha256(concat(fields[0..3]))
+                               // signed with BRC-42 child of identity_key:
+                               //   protocol_id = [2, "service host interconnect"]
+                               //   key_id      = "1"
+                               //   counterparty = Anyone
+                               //   forSelf     = true
 ```
 
-The locking key is the identity_key in field 1; only the operator can revoke by spending the PushDrop UTXO.
+The locking key MUST equal the same BRC-42 child as the signing key. Implementations MUST reject any token where (a) `fields.length != 5`, (b) field[4] is not a valid DER ECDSA signature linked to field[1] via the BRC-42 derivation above, or (c) the locking key does not equal the derived child. The canonical validation routine is the Rust port at `bsv-overlay-discovery::validation::is_token_signature_correctly_linked`; both stacks SHOULD delegate to it or to an equivalent byte-for-byte port.
 
-## 12.3 Capabilities JSON
+**MPC-specific capabilities are NOT in this script.** They are served off-chain via the `/capabilities` side-channel — see §12.3 below. Per ADR-0050, embedding capabilities in any PushDrop field makes the token invisible to every canonical overlay validator on the network.
 
-Canonical JSON (sorted keys). Schema:
+Revocation: the cosigner spends the PushDrop UTXO with the BRC-42 child key (which it controls because it controls `identity_key`).
+
+## 12.3 Capabilities side-channel — `GET /capabilities` (per [ADR-0050](decisions/0050-chip-token-architecture-path-a.md))
+
+Each cosigner MUST serve a JSON response at `GET https://{service_url_host}/capabilities`. Discovery clients fetch this endpoint **after** validating the cosigner's signed SHIP token (§12.2) and merge the response with `(identity_key, service_url)` from the token to assemble a complete `MpcNodeInfo`.
+
+Response: `Content-Type: application/json`. Recommended `Cache-Control: max-age=300`. Canonical JSON (sorted keys). Schema:
 
 ```json
 {
@@ -67,6 +78,10 @@ Required fields: `version`, `curves`, `algorithms`, `threshold_configs`, `fee_sa
 Optional fields: everything else.
 
 Future-compat: parsers MUST tolerate unknown fields (forward compatibility).
+
+**v1 minimum subset (per ADR-0050):** for cross-impl interop in the M1 demo, both stacks MUST emit at minimum `{ curves, threshold_configs, fee_sats, version, max_presignatures?, min_balance_sats? }`. The richer fields above (`policy_hash`, `transport`, `accepted_cert_roots`, `cert_serials`, `audit_log_url`, etc.) become required at v1.5 / M2 once their producing infrastructure lands. Until then, parsers MUST tolerate their absence.
+
+**Per-cosigner failure handling:** discovery clients fetching `/capabilities` from multiple cosigners in parallel MUST treat per-cosigner fetch failures (timeout, non-2xx, unparseable JSON) as a node-skip with warn-log — they MUST NOT abort the entire discovery on one bad cosigner. Reference impl: `bsv-mpc-overlay::discovery::discover_nodes` uses `futures::future::join_all` with per-request 5-second timeout.
 
 ## 12.4 Discovery query
 

@@ -130,7 +130,7 @@ Acknowledgement is best-effort; protocol correctness does NOT depend on relay-si
 
 - bsv-mpc currently uses direct HTTP between proxy and KSS (`bridge.rs`). MUST add MessageBox transport client (port from rust-mpc) to participate in cross-impl ceremonies.
 - rust-mpc currently uses Binary's `bsv-messagebox-client` 0.1.1 (Socket.IO/EngineIO over WebSocket). No change required for transport; one fix needed for presigning round handling (see [`OPEN-QUESTIONS.md` Q3](OPEN-QUESTIONS.md)).
-- bsv-messagebox-cloudflare currently HTTP-only (v2 scope, `MessageRoom` Durable Object class deleted). Calhoun adds Socket.IO over CF Worker DOs to restore WebSocket parity with `<binary-messagebox-host-tbd>`.
+- bsv-messagebox-cloudflare shipped WebSocket parity (Socket.IO/EngineIO compatible) over CF Worker Durable Objects in v0.2.0 (merge `278cf07`): `/ws` routes to a per-identity hibernatable `MessageHub` DO and `/socket.io/*` routes to per-sid `EngineIoSession` DOs for `socket.io-client@4.x` compatibility. No further transport-layer action required for v1 conformance; consistent with §06.7.
 
 ## 06.15 Presignature lifecycle — overview
 

@@ -1,10 +1,10 @@
-# Status — 2026-05-17 (PM, late-late)
+# Status — 2026-05-17 (EOD)
 
 > Hand-maintained snapshot. Whoever sees this drift edits + commits. No bot.
 
 ## Current sprint: M1 (2026-05-29, 12 days out)
 
-**M1 — Cross-impl mainnet signing demo:** https://github.com/B1nary-Calhoun-Partnership/MPC-Spec/milestone/1 · **6 of 16 closed (37.5%)**
+**M1 — Cross-impl mainnet signing demo:** https://github.com/B1nary-Calhoun-Partnership/MPC-Spec/milestone/1 · **7 of 17 closed (41%)**
 
 **Partnership Roadmap project (all repos):** https://github.com/orgs/B1nary-Calhoun-Partnership/projects/1
 
@@ -18,6 +18,7 @@
 | #34 | bsv-mpc: real-mainnet e2e for Path A CHIP | [`0423aad`](https://github.com/B1nary-Calhoun-Partnership/bsv-mpc/commit/0423aad) (bsv-mpc) |
 | #35 | bsv-mpc: C2 (proxy↔KSS wire swap) — closed as misscoped (subsumed by #2) | (closed in GitHub) |
 | #3  | bsv-mpc: canonical ExecutionId + SessionId + CBOR envelope | [`c7355e4`](https://github.com/B1nary-Calhoun-Partnership/bsv-mpc/commit/c7355e4) + [`92793a8`](https://github.com/B1nary-Calhoun-Partnership/bsv-mpc/commit/92793a8) + [`870f3a3`](https://github.com/B1nary-Calhoun-Partnership/bsv-mpc/commit/870f3a3) (bsv-mpc) |
+| #2  | bsv-mpc: MessageBox transport client with WebSocket primary | Phase A–E chain ending [`ed7feaf`](https://github.com/B1nary-Calhoun-Partnership/bsv-mpc/commit/ed7feaf) (bsv-mpc); within-stack proof TXID [`82ccb15c…`](https://whatsonchain.com/tx/82ccb15c49985a32b355a618f417bb7a09ec4ee5cf34e539e9baaebb74dadc29) on mainnet. Cross-stack interop split off into new joint issue **#36**. |
 
 Also landed (no MPC-Spec issue gating these but spec-affecting):
 - **bsv-mpc [PR #1](https://github.com/B1nary-Calhoun-Partnership/bsv-mpc/pull/1) MERGED (`870f3a3`)** — canonical types + formulas + envelope module for MPC-Spec #3 parts A/B/C. §02 / §04 / §05 vectors reproduce byte-for-byte; all 8 §05.9.1 rejection cases caught. Closes #3 (typed types + canonical formulas + canonical CBOR envelope all on `main`).
@@ -44,13 +45,15 @@ Also landed (no MPC-Spec issue gating these but spec-affecting):
 
 | | Active | Next up | Blocked on |
 |---|---|---|---|
-| **John** (Calhoun) | **M1 #2 MessageBox transport DONE — Phases A-E all live-proven; Phase E mainnet TXID [`82ccb15c…`](https://whatsonchain.com/tx/82ccb15c49985a32b355a618f417bb7a09ec4ee5cf34e539e9baaebb74dadc29) broadcast SEEN_ON_NETWORK.** Within-stack proof complete. | #4 presig lifecycle (~600-900 LOC) · #6 deploy 1 cosigner · #J1 cggmp21-fork org transfer/visibility | Ishaan #9 (only blocks #4) |
+| **John** (Calhoun) | **M1 #2 CLOSED** (Calhoun-side transport client shipped + live-proven on mainnet; cross-stack split into joint #36). Awaiting on Ishaan #8 + #10 for joint **#36** (cross-stack 2-of-2 MessageBox sign on mainnet). | #4 presig lifecycle (~600-900 LOC) · #6 deploy 1 cosigner · #J1 cggmp21-fork org transfer/visibility | Ishaan #9 (only blocks #4); Ishaan #8 + #10 (block #36 — joint) |
 | **Ishaan** (Binary) | #7 cggmp24 pin · #8 canonical wire | **#9 byte-lock 3 ciphertexts** ← critical path · #10 deploy 2 cosigners | nothing |
 | **Mitch** (Binary) | review ADRs 0030-0050 | sign off on ADR-0050 (Path A) · flag any of the 12 design calls in `CHANGES-PROPOSED.md` that don't fit | nothing |
 
 ## Critical path to M1 demo
 
 `Ishaan #9` → `John #4` → `John #6 + Ishaan #10` (deploy) → `#12` (demo ceremony 2026-05-29)
+
+Parallel cross-stack interop precursor: `Ishaan #8 + #10` → `#36` (joint 2-of-2 cross-stack mainnet sign — closest within-stack analogue is bsv-mpc Phase E [`82ccb15c…`](https://whatsonchain.com/tx/82ccb15c49985a32b355a618f417bb7a09ec4ee5cf34e539e9baaebb74dadc29))
 
 ## Where to look
 
